@@ -331,50 +331,126 @@ def generer_pdf_bytes(permis):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.set_fill_color(0, 51, 102); pdf.rect(10, 10, 190, 22, 'F')
-    pdf.set_text_color(255, 255, 255); pdf.set_font("Helvetica", "B", 14)
-    pdf.text(15, 20, sanitize_text("PROCTER & GAMBLE AMIENS - e-Work Permit System"))
+    
+    # EN-TÊTE P&G
+    pdf.set_fill_color(0, 51, 102)
+    pdf.rect(10, 10, 190, 22, 'F')
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("Helvetica", "B", 14)
+    pdf.text(15, 20, sanitize_text("PROCTER & GAMBLE AMIENS — e-Work Permit System"))
     pdf.set_font("Helvetica", "", 10)
-    pdf.text(15, 27, sanitize_text(f"Ref: {permis['id']} | Date: {permis['date_travaux']} | Time: {permis['heure']}"))
+    pdf.text(15, 27, sanitize_text(f"Ref: {permis.get('id', 'PT-000')} | Date: {permis.get('date_travaux', '')} | Time: {permis.get('heure', '')}"))
     pdf.set_y(38)
 
+    # BANNIÈRE DE STATUT
     if permis.get('statut') in ['VALIDÉ', 'VALIDATED']:
-        pdf.set_fill_color(220, 252, 231); pdf.set_draw_color(34, 197, 94); pdf.set_text_color(22, 101, 52)
-        status_str = "VALIDATED PERMIT & AUDITABLE ON ePDP ACCOUNT"
+        pdf.set_fill_color(220, 252, 231)
+        pdf.set_draw_color(34, 197, 94)
+        pdf.set_text_color(22, 101, 52)
+        status_str = "VALIDATED PERMIT & AUDITABLE ON ePDP ACCOUNT / PERMIS VALIDÉ"
     else:
-        pdf.set_fill_color(254, 240, 138); pdf.set_draw_color(234, 179, 8); pdf.set_text_color(133, 77, 14)
-        status_str = "PERMIT PENDING BATCH VALIDATION (07:30 AM)"
+        pdf.set_fill_color(254, 240, 138)
+        pdf.set_draw_color(234, 179, 8)
+        pdf.set_text_color(133, 77, 14)
+        status_str = "PERMIT PENDING BATCH VALIDATION (07:30 AM) / EN ATTENTE BATCH"
 
     pdf.rect(10, 38, 190, 10, 'DF')
-    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_font("Helvetica", "B", 10)
     pdf.text(15, 44.5, sanitize_text(status_str))
-    pdf.set_text_color(0, 0, 0); pdf.set_y(54)
+    pdf.set_text_color(0, 0, 0)
+    pdf.set_y(52)
 
+    # SECTION 1: INFORMATIONS GÉNÉRALES & LOCALISATION
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, sanitize_text("1. GENERAL INFORMATION & SUBCONTRACTING"), 0, 1)
+    pdf.cell(0, 6, sanitize_text("1. GENERAL INFORMATION & LOCATION / INFORMATIONS GÉNÉRALES"), 0, 1)
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 5, sanitize_text(f"Company: {permis['societe']} | PDP: {permis['pdp']} | MoP: {permis['mop']}"), 0, 1)
+    pdf.cell(0, 5, sanitize_text(f"Company / Société: {permis.get('societe', '')} | PDP: {permis.get('pdp', '')} | MoP: {permis.get('mop', '')}"), 0, 1)
+    
     if permis.get("is_subcontractor"):
-        pdf.cell(0, 5, sanitize_text(f"[SUBCONTRACTING] Main Contractor N2 Approver: {permis.get('titulaire_n2')}"), 0, 1)
-    pdf.cell(0, 5, sanitize_text(f"N2 Supervisor: {permis['n2']} | Area: {permis['zone']} ({permis.get('emplacement', '')})"), 0, 1)
+        pdf.set_text_color(185, 28, 28)
+        pdf.cell(0, 5, sanitize_text(f"[SUBCONTRACTOR] Main Contractor N2 Lead: {permis.get('titulaire_n2', '')}"), 0, 1)
+        pdf.set_text_color(0, 0, 0)
+        
+    pdf.cell(0, 5, sanitize_text(f"N2 Supervisor: {permis.get('n2', '')} | Area: {permis.get('zone', '')}"), 0, 1)
+    if permis.get('emplacement'):
+        pdf.cell(0, 5, sanitize_text(f"Exact Location Details: {permis.get('emplacement', '')}"), 0, 1)
     pdf.ln(3)
 
+    # SECTION 2: SYNTHÈSE DES RISQUES
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, sanitize_text("2. RISKS & SPECIFIC PERMITS SUMMARY"), 0, 1)
-    pdf.set_font("Helvetica", "B", 8); pdf.set_fill_color(241, 245, 249)
+    pdf.cell(0, 6, sanitize_text("2. RISK ASSESSMENT SUMMARY / SYNTHÈSE DES RISQUES"), 0, 1)
+    pdf.set_font("Helvetica", "B", 8)
+    pdf.set_fill_color(241, 245, 249)
     pdf.cell(60, 6, sanitize_text("Selected Activity"), 1, 0, 'L', True)
     pdf.cell(65, 6, sanitize_text("Identified Risk"), 1, 0, 'L', True)
     pdf.cell(65, 6, sanitize_text("Prevention / PPE / Signatures"), 1, 1, 'L', True)
 
     pdf.set_font("Helvetica", "", 8)
     for r in permis.get("tableau_risques", []):
-        pdf.cell(60, 6, sanitize_text(str(r.get("activite", "")))[:32], 1, 0)
-        pdf.cell(65, 6, sanitize_text(str(r.get("risque", "")))[:36], 1, 0)
-        pdf.cell(65, 6, sanitize_text(str(r.get("prevention", "")))[:36], 1, 1)
+        act_key = [k for k in r.keys() if "Activ" in k or "activ" in k or "Act" in k]
+        risk_key = [k for k in r.keys() if "Risque" in k or "risk" in k or "Risk" in k]
+        prev_key = [k for k in r.keys() if "Prev" in k or "prev" in k or "Prév" in k]
+
+        val_act = r[act_key[0]] if act_key else list(r.values())[0]
+        val_risk = r[risk_key[0]] if risk_key else list(r.values())[1]
+        val_prev = r[prev_key[0]] if prev_key else list(r.values())[2]
+
+        pdf.cell(60, 6, sanitize_text(str(val_act))[:35], 1, 0)
+        pdf.cell(65, 6, sanitize_text(str(val_risk))[:38], 1, 0)
+        pdf.cell(65, 6, sanitize_text(str(val_prev))[:38], 1, 1)
 
     pdf.ln(3)
+
+    # SECTION 3: ÉQUIPEMENTS DE PROTECTION INDIVIDUELLE (EPI)
     pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, sanitize_text("3. AUDITED SIGNATURES IN ePDP"), 0, 1)
+    pdf.cell(0, 6, sanitize_text("3. SELECTED PPEs / ÉQUIPEMENTS DE PROTECTION INDIVIDUELLE"), 0, 1)
+    pdf.set_font("Helvetica", "", 8)
+    
+    epis_pdf = []
+    fd = st.session_state.form_data
+    if fd.get("epi_lunettes_chantier_en166"): epis_pdf.append("Safety Glasses EN166")
+    if fd.get("epi_visiere_idra_en166b"): epis_pdf.append("Face Shield EN166B")
+    if fd.get("epi_casque_jugulaire"): epis_pdf.append("Helmet with Chinstrap")
+    if fd.get("epi_gants_anticoupure_4x43d"): epis_pdf.append("Cut Gloves 4x43D")
+    if fd.get("epi_gants_chimiques_en374"): epis_pdf.append("Chemical Gloves EN374")
+    if fd.get("epi_gants_elec_en60903"): epis_pdf.append("Electrical Gloves EN60903")
+    if fd.get("epi_resp_cartouche_abek_en14387"): epis_pdf.append("ABEK Respirator")
+    if fd.get("epi_autre_texte"): epis_pdf.append(f"Other: {fd.get('epi_autre_texte')}")
+    
+    pdf.multi_cell(0, 4.5, sanitize_text("Mandatory PPEs: " + ", ".join(epis_pdf)), 1)
+    pdf.ln(3)
+
+    # SECTION 4: DÉTAILS TECHNIQUES DES PERMIS HRT SPÉCIFIQUES
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, sanitize_text("4. HRT SPECIFIC PERMITS TECHNICAL DETAILS / DÉTAILS TECHNIQUES"), 0, 1)
+    pdf.set_font("Helvetica", "", 8)
+
+    if fd.get("p_meuleuse"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Meuleuse / Angle Grinder] Disc: {fd.get('meuleuse_diametre')} | Model: {fd.get('meuleuse_marque')} | Power: {fd.get('meuleuse_alim')} | Serial: {fd.get('meuleuse_ref')}"), 0)
+    if fd.get("p_hauteur"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Hauteur / Height] PIRL: {fd.get('h_pirl')} | MEWP: {fd.get('h_nacelle')} | Scaffold: {fd.get('h_echaf')}"), 0)
+    if fd.get("p_toiture"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Toiture / Roof] Protection: {fd.get('toiture_protection')} | Approver: {fd.get('toiture_valideur')}"), 0)
+    if fd.get("p_points_chauds"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Point Chaud / Hot Work] Extinguishers: {fd.get('chaud_extincteur1')} & {fd.get('chaud_extincteur2')} | Fire Watch: {fd.get('chaud_vigie_nom')} | End: {fd.get('chaud_heure_fin')}"), 0)
+    if fd.get("p_excavation"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Excavation] DICT: {fd.get('excav_dict')} | Signatures: Manager {fd.get('excav_chef_manoeuvre')}, Owner {fd.get('excav_do')}, Red Helmet {fd.get('excav_casque_rouge')}"), 0)
+    if fd.get("p_grutage"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Grutage / Crane] Weight: {fd.get('grut_poids_charge')+fd.get('grut_poids_acc')} {fd.get('grut_unite')} | Crane ID: {fd.get('grut_immat')} | Wind: {fd.get('grut_vent_val')} {fd.get('grut_vent_unite')}"), 0)
+    if fd.get("p_confine"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Espace Confiné / Confined Space] Vessel: {fd.get('conf_lieu')} | O2: {fd.get('conf_o2')}% | Hole Watch: {fd.get('conf_standby')}"), 0)
+    if fd.get("p_electrique"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[Électrique / Electrical] Cabinet: {fd.get('elec_armoire')} | Proximity: {fd.get('elec_voisinage_nues')} | E&I Lead: {fd.get('elec_valideur_ei')}"), 0)
+    if fd.get("p_consignation"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[LOTO Isolation] Method: {fd.get('loto_ouverture_methode')} | Location 1: {fd.get('loto_ouvert_loc1')} | Lock Tag: {fd.get('loto_is_elec_loc2')}"), 0)
+    if fd.get("p_systeme_risque"):
+        pdf.multi_cell(0, 4.5, sanitize_text(f"[ATEX / Chemical] Barricade: {fd.get('sr_balisage')} | Shower: {fd.get('sr_douche_rince')} | Signatures: Operator {fd.get('sr_sign_intervenant')}, Owner {fd.get('sr_sign_do')}, Ops {fd.get('sr_sign_operations')}"), 0)
+
+    pdf.ln(3)
+
+    # SECTION 5: SIGNATURES AUDITÉES
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.cell(0, 6, sanitize_text("5. AUDITED SIGNATURES IN ePDP / ÉMARGEMENTS AUDITÉS"), 0, 1)
     pdf.set_font("Helvetica", "", 8)
     for sign in permis.get("intervenants", []):
         pdf.cell(0, 5, sanitize_text(f" [OK] Timestamped worker signature: {sign}"), 1, 1)
