@@ -536,16 +536,22 @@ if "Borne Kiosk" in role:
     st.markdown(f"<div class='pg-header'><h1 style='margin:0;'>{L['title']}</h1><p style='margin:0;'>{L['subtitle']}</p></div>", unsafe_allow_html=True)
 
     if st.session_state.kiosk_mode == "HOME":
-        st.write(f"### {L['home_select']}")
-        col_act1, col_act2 = st.columns(2)
-        with col_act1:
-            st.markdown(f"<div class='welcome-card'><h2 style='color:#003366;'>{L['btn_work_permit']}</h2><p>{L['desc_work_permit']}</p></div>", unsafe_allow_html=True)
-            if st.button(L['btn_start_permit'], type="primary", use_container_width=True):
-                st.session_state.kiosk_mode = "PERMIS"; st.session_state.step = 1; st.rerun()
-        with col_act2:
-            st.markdown(f"<div class='welcome-card'><h2 style='color:#003366;'>{L['btn_pdp']}</h2><p>{L['desc_pdp']}</p></div>", unsafe_allow_html=True)
-            if st.button(L['btn_start_pdp'], use_container_width=True):
-                st.session_state.kiosk_mode = "PDP"; st.rerun()
+        st.write("---")
+st.caption(TR[st.session_state.lang]["lang_title"])
+
+col_fr, col_en, _ = st.columns([1, 1, 6])
+
+with col_fr:
+    type_fr = "primary" if st.session_state.lang == "FR" else "secondary"
+    if st.button("🇫🇷 FR", type=type_fr, use_container_width=True, key="btn_lang_fr_kiosk"):
+        st.session_state.lang = "FR"
+        st.rerun()
+
+with col_en:
+    type_en = "primary" if st.session_state.lang == "EN" else "secondary"
+    if st.button("🇬🇧 EN", type=type_en, use_container_width=True, key="btn_lang_en_kiosk"):
+        st.session_state.lang = "EN"
+        st.rerun()
 
         # BARRE DE SÉLECTION DE LANGUE AVEC DRAPEAUX SUR L'ÉCRAN D'ACCUEIL
         st.markdown("<div class='lang-box'>", unsafe_allow_html=True)
