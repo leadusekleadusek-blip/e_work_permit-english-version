@@ -102,6 +102,23 @@ if "kiosk_mode" not in st.session_state:
 if "step" not in st.session_state:
     st.session_state.step = 1
 
+# --- BOUTONS COMPACTS ET DISCRETS POUR LA LANGUE ---
+st.caption("🌐 Langue / Language :")
+col_fr, col_en, _ = st.columns([1, 1, 6])
+
+with col_fr:
+    type_fr = "primary" if st.session_state.lang == "FR" else "secondary"
+    if st.button("🇫🇷 FR", type=type_fr, use_container_width=True, key="btn_lang_fr"):
+        st.session_state.lang = "FR"
+        st.rerun()
+
+with col_en:
+    type_en = "primary" if st.session_state.lang == "EN" else "secondary"
+    if st.button("🇬🇧 EN", type=type_en, use_container_width=True, key="btn_lang_en"):
+        st.session_state.lang = "EN"
+        st.rerun()
+
+# --- DICTIONNAIRE TRADUCTIONS ---
 TR = {
     "FR": {
         "title": "PROCTER & GAMBLE — AMIENS",
@@ -152,7 +169,7 @@ TR = {
         "weather_tomorrow": "Tomorrow:",
         "weather_gusts": "Max Wind Gusts:",
         "emergencies_title": "📞 P&G AMIENS SITE EMERGENCY PHONE NUMBERS:",
-        "gate": "Guard House / Gate:",
+        "gate": "Guard House :",
         "infirmary": "Medical Center:",
         "fire": "Fire / Environment Response:",
         "subcontract_alert": "🤝 Subcontracting Rule: Since the selected company is a subcontractor, the main contractor's N2 supervisor must also approve and sign the permit.",
