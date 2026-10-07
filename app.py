@@ -76,14 +76,6 @@ st.markdown("""
         border-radius: 6px;
         margin-bottom: 15px;
     }
-    .lang-box {
-        background-color: white;
-        border: 1px solid #cbd5e1;
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
-        margin-top: 20px;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -101,22 +93,6 @@ if "kiosk_mode" not in st.session_state:
 
 if "step" not in st.session_state:
     st.session_state.step = 1
-
-# --- BOUTONS COMPACTS ET DISCRETS POUR LA LANGUE ---
-st.caption("🌐 Langue / Language :")
-col_fr, col_en, _ = st.columns([1, 1, 6])
-
-with col_fr:
-    type_fr = "primary" if st.session_state.lang == "FR" else "secondary"
-    if st.button("🇫🇷 FR", type=type_fr, use_container_width=True, key="btn_lang_fr"):
-        st.session_state.lang = "FR"
-        st.rerun()
-
-with col_en:
-    type_en = "primary" if st.session_state.lang == "EN" else "secondary"
-    if st.button("🇬🇧 EN", type=type_en, use_container_width=True, key="btn_lang_en"):
-        st.session_state.lang = "EN"
-        st.rerun()
 
 # --- DICTIONNAIRE TRADUCTIONS ---
 TR = {
@@ -522,48 +498,53 @@ st.sidebar.divider()
 st.sidebar.write(L["lang_title"])
 col_l1, col_l2 = st.sidebar.columns(2)
 with col_l1:
-    if st.button("🇫🇷 FR", use_container_width=True, type="primary" if st.session_state.lang == "FR" else "secondary"):
-        st.session_state.lang = "FR"; st.rerun()
+    if st.button("🇫🇷 FR", use_container_width=True, type="primary" if st.session_state.lang == "FR" else "secondary", key="sb_lang_fr"):
+        st.session_state.lang = "FR"
+        st.rerun()
 with col_l2:
-    if st.button("🇬🇧 EN", use_container_width=True, type="primary" if st.session_state.lang == "EN" else "secondary"):
-        st.session_state.lang = "EN"; st.rerun()
+    if st.button("🇬🇧 EN", use_container_width=True, type="primary" if st.session_state.lang == "EN" else "secondary", key="sb_lang_en"):
+        st.session_state.lang = "EN"
+        st.rerun()
 
 # ==============================================================================
 # INTERFACE 1 : BORNE KIOSK TACTILE
 # ==============================================================================
-if "Borne Kiosk" in role:
+if "Kiosk" in role:
 
     st.markdown(f"<div class='pg-header'><h1 style='margin:0;'>{L['title']}</h1><p style='margin:0;'>{L['subtitle']}</p></div>", unsafe_allow_html=True)
 
     if st.session_state.kiosk_mode == "HOME":
-        st.write("---")
-st.caption(TR[st.session_state.lang]["lang_title"])
-
-col_fr, col_en, _ = st.columns([1, 1, 6])
-
-with col_fr:
-    type_fr = "primary" if st.session_state.lang == "FR" else "secondary"
-    if st.button("🇫🇷 FR", type=type_fr, use_container_width=True, key="btn_lang_fr_kiosk"):
-        st.session_state.lang = "FR"
-        st.rerun()
-
-with col_en:
-    type_en = "primary" if st.session_state.lang == "EN" else "secondary"
-    if st.button("🇬🇧 EN", type=type_en, use_container_width=True, key="btn_lang_en_kiosk"):
-        st.session_state.lang = "EN"
-        st.rerun()
-
-        # BARRE DE SÉLECTION DE LANGUE AVEC DRAPEAUX SUR L'ÉCRAN D'ACCUEIL
-        st.markdown("<div class='lang-box'>", unsafe_allow_html=True)
-        st.write(f"### {L['lang_title']}")
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            if st.button("🇫🇷 Français", use_container_width=True, type="primary" if st.session_state.lang == "FR" else "secondary"):
-                st.session_state.lang = "FR"; st.rerun()
-        with col_f2:
-            if st.button("🇬🇧 English", use_container_width=True, type="primary" if st.session_state.lang == "EN" else "secondary"):
-                st.session_state.lang = "EN"; st.rerun()
+        st.markdown("<div class='welcome-card'>", unsafe_allow_html=True)
+        st.write(f"### {L['home_select']}")
+        
+        c_k1, c_k2 = st.columns(2)
+        with c_k1:
+            st.info(f"**{L['btn_work_permit']}**\n\n{L['desc_work_permit']}")
+            if st.button(L["btn_start_permit"], type="primary", use_container_width=True):
+                st.session_state.kiosk_mode = "PERMIS"
+                st.session_state.step = 1
+                st.rerun()
+        with c_k2:
+            st.success(f"**{L['btn_pdp']}**\n\n{L['desc_pdp']}")
+            if st.button(L["btn_start_pdp"], type="primary", use_container_width=True):
+                st.session_state.kiosk_mode = "PDP"
+                st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
+
+        # SÉLECTEUR DE LANGUE DISCRET EN BAS DE PAGE ACCUEIL
+        st.write("---")
+        st.caption(L["lang_title"])
+        col_fr, col_en, _ = st.columns([1, 1, 6])
+        with col_fr:
+            type_fr = "primary" if st.session_state.lang == "FR" else "secondary"
+            if st.button("🇫🇷 FR", type=type_fr, use_container_width=True, key="btn_lang_fr_home"):
+                st.session_state.lang = "FR"
+                st.rerun()
+        with col_en:
+            type_en = "primary" if st.session_state.lang == "EN" else "secondary"
+            if st.button("🇬🇧 EN", type=type_en, use_container_width=True, key="btn_lang_en_home"):
+                st.session_state.lang = "EN"
+                st.rerun()
 
     elif st.session_state.kiosk_mode == "PDP":
         if st.button(L["back_home"]): st.session_state.kiosk_mode = "HOME"; st.rerun()
@@ -812,8 +793,8 @@ with col_en:
                 st.write("**• Gloves / Gants :**")
                 st.session_state.form_data["epi_gants_anticoupure_4x43d"] = st.checkbox("Cut Gloves / Gants Anti-coupure 4x43D", value=auto_gants_coupure or get_val("epi_gants_anticoupure_4x43d", True))
                 st.session_state.form_data["epi_gants_manutention_cuir"] = st.checkbox("Leather Gloves / Gants Cuir", value=get_val("epi_gants_manutention_cuir"))
-                st.session_state.form_data["epi_gants_chimiques_en374"] = st.checkbox("Chemical Gloves / Gants Chimiques EN374", value=get_val("sta_prod_chimiques") or get_val("epi_gants_chimiques_en374"))
-                st.session_state.form_data["epi_gants_elec_en60903"] = st.checkbox("Electrical Gloves / Gants Électriques EN60903", value=auto_gants_elec or get_val("epi_gants_elec_en60903"))
+                st.session_state.form_data["epi_gants_chimiques_en374"] = st.checkbox("Chemical Gloves EN374", value=get_val("sta_prod_chimiques") or get_val("epi_gants_chimiques_en374"))
+                st.session_state.form_data["epi_gants_elec_en60903"] = st.checkbox("Electrical Gloves EN60903", value=auto_gants_elec or get_val("epi_gants_elec_en60903"))
 
                 st.write("**• Respiratory / Protection Respiratoire :**")
                 st.session_state.form_data["epi_resp_ffp1_ffp2"] = st.checkbox("FFP1 / FFP2 Mask", value=get_val("epi_resp_ffp1_ffp2"))
@@ -1122,7 +1103,7 @@ with col_en:
             # 4. DÉTAILS DENSE ET COMPLETS DES PERMIS SPÉCIFIQUES OUVERTS
             # ---------------------------------------------------------
             with st.container(border=True):
-                st.markdown("### ⚙️️ 4. HRT Specific Permits Technical Details / Détails Techniques")
+                st.markdown("### ⚙ 4. HRT Specific Permits Technical Details / Détails Techniques")
                 
                 if get_val("p_meuleuse"):
                     st.write(f"• **Meuleuse / Grinder :** Disc `{get_val('meuleuse_diametre')}` | Model `{get_val('meuleuse_marque')}` | Power `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
@@ -1166,10 +1147,12 @@ with col_en:
                 "n2": get_val("n2_nom"),
                 "zone": get_val("lieu_pdp"),
                 "emplacement": get_val("lieu_precision"),
+                "description": get_val("description"),
                 "statut": "PENDING_BATCH",
                 "heure": datetime.datetime.now().strftime("%H:%M"),
                 "intervenants": list(get_val("intervenants", [])),
-                "tableau_risques": tableau_data
+                "tableau_risques": tableau_data,
+                "epis_cochis": epis_list
             }
 
             pdf_bytes = generer_pdf_bytes(permis_final)
