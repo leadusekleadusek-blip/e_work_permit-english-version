@@ -428,7 +428,7 @@ def generer_pdf_bytes(permis):
     if fd.get("p_meuleuse"):
         pdf.multi_cell(0, 4.5, sanitize_text(f"[Meuleuse / Angle Grinder] Disc: {fd.get('meuleuse_diametre')} | Model: {fd.get('meuleuse_marque')} | Power: {fd.get('meuleuse_alim')} | Serial: {fd.get('meuleuse_ref')}"), 0)
     if fd.get("p_hauteur"):
-        pdf.multi_cell(0, 4.5, sanitize_text(f"[Hauteur / Height] PIRL: {fd.get('h_pirl')} | MEWP: {fd.get('h_nacelle')} | Scaffold: {fd.get('h_echaf')}"), 0)
+        pdf.multi_cell(190, 4.5, sanitize_text(f"[Hauteur / Height] PIRL: {fd.get('h_pirl')} | MEWP: {fd.get('h_nacelle')} | Scaffold: {fd.get('h_echaf')}"))
     if fd.get("p_toiture"):
         pdf.multi_cell(0, 4.5, sanitize_text(f"[Toiture / Roof] Protection: {fd.get('toiture_protection')} | Approver: {fd.get('toiture_valideur')}"), 0)
     if fd.get("p_points_chauds"):
