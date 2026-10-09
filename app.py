@@ -94,7 +94,6 @@ if "kiosk_mode" not in st.session_state:
 if "step" not in st.session_state:
     st.session_state.step = 1
 
-# Dictionnaire de traduction strict (100% monolingue selon la langue active)
 TR = {
     "FR": {
         "title": "PROCTER & GAMBLE — AMIENS",
@@ -489,7 +488,7 @@ def generer_pdf_bytes(permis):
 
     if fd.get("p_systeme_risque"):
         pdf.set_font("Helvetica", "B", 8)
-        pdf.cell(190, 4, sanitize_text("• Systèmes à Risques / ATEX :" if is_fr else "• High Hazard / ATEX:"), 0, 1)
+        pdf.cell(190, 4, sanitize_text("• Systèmes à Risques / ATEX :" if st.session_state.lang == "FR" else "• High Hazard / ATEX:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
         pdf.multi_cell(190, 4, sanitize_text(f"  Balisage élargi OK | Douche sécurité vérifiée | Signatures: Opérateur ({fd.get('sr_sign_intervenant')}), DO ({fd.get('sr_sign_do')}), Fabrication ({fd.get('sr_sign_operations')})"))
 
@@ -521,7 +520,6 @@ role = st.sidebar.radio("Interface :", [
 st.sidebar.divider()
 st.sidebar.write(L["lang_title"])
 
-# Boutons de langue avec drapeaux seuls
 col_l1, col_l2 = st.sidebar.columns(2)
 with col_l1:
     if st.button("🇫🇷", use_container_width=True, type="primary" if st.session_state.lang == "FR" else "secondary", key="sb_lang_fr"):
@@ -680,7 +678,7 @@ if "Kiosk" in role:
                 if st.button(L["next"], type="primary"): st.session_state.step = 5; st.rerun()
 
         # ==============================================================================
-        # ÉTAPE 5 : MÉTÉO -> RISQUES PRINCIPAUX -> STA -> EPIS
+        # ÉTAPE 5 : MÉTÉO EN DIRECT & SÉLECTION DES RISQUES / EPI
         # ==============================================================================
         elif current_step == 5:
             st.subheader(f"5. {L['steps'][4]}")
@@ -689,15 +687,17 @@ if "Kiosk" in role:
             temp_max = meteo_live['temp_max_j0']
             vent = meteo_live['vent_j0']
             
-            if vent > 36 or temp_max < 3 or temp_max > 30:
+            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
+
+            if meteo_interdiction:
                 weather_class = "weather-alert"
-                status_msg = "❌ <b>ALERTE MÉTÉO</b> (Vent > 36 km/h ou T° Extrême)" if st.session_state.lang == "FR" else "❌ <b>WEATHER ALERT</b> (Wind > 36 km/h or Extreme Temp)"
+                status_msg = f"❌ <b>ALERTE MÉTÉO : INTERDICTION DE TRAVAIL EN EXTÉRIEUR ET EN HAUTEUR</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil d'arrêt : 36 km/h)<br>• Les permis Hauteur (extérieur), Toiture et Grutage / Levage sont <b>strictement bloqués</b>." if st.session_state.lang == "FR" else f"❌ <b>WEATHER ALERT: OUTDOOR & HEIGHT WORK PROHIBITED</b><br>• Measured wind: <b>{vent} km/h</b> (Stop limit: 36 km/h)<br>• Height (outdoor), Roof Access, and Crane Lifting permits are <b>strictly blocked</b>."
             elif 30 <= vent <= 36:
                 weather_class = "weather-warning"
-                status_msg = "⚠️ <b>VIGILANCE MÉTÉO</b> (Vent entre 30 et 36 km/h)" if st.session_state.lang == "FR" else "⚠️ <b>WEATHER VIGILANCE</b> (Wind between 30 and 36 km/h)"
+                status_msg = f"⚠️ <b>VIGILANCE MÉTÉO RENFORCÉE</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil de pré-alerte)<br>• Anémomètre obligatoire pour le grutage et vigilance accrue sur nacelle." if st.session_state.lang == "FR" else f"⚠️ <b>ENHANCED WEATHER VIGILANCE</b><br>• Measured wind: <b>{vent} km/h</b> (Warning limit)<br>• Anemometer required for crane lifting and high vigilance on MEWP."
             else:
                 weather_class = "weather-ok"
-                status_msg = "✅ <b>CONDITIONS FAVORABLES</b>" if st.session_state.lang == "FR" else "✅ <b>FAVORABLE CONDITIONS</b>"
+                status_msg = "✅ <b>CONDITIONS MÉTÉOROLOGIQUES FAVORABLES</b>" if st.session_state.lang == "FR" else "✅ <b>FAVORABLE WEATHER CONDITIONS</b>"
 
             st.markdown(f"""
             <div class='weather-container {weather_class}'>
@@ -720,11 +720,24 @@ if "Kiosk" in role:
             
             cr1, cr2 = st.columns(2)
             with cr1:
-                p_hauteur = st.checkbox("Travail en hauteur" if st.session_state.lang == "FR" else "Work at height", value=get_val("p_hauteur"))
-                p_toiture = st.checkbox("Accès toiture" if st.session_state.lang == "FR" else "Roof access", value=get_val("p_toiture"))
+                p_hauteur_val = get_val("p_hauteur")
+                p_toiture_val = get_val("p_toiture")
+                p_grutage_val = get_val("p_grutage")
+
+                # Désactivation si alerte météo critique
+                p_hauteur = st.checkbox("Travail en hauteur" if st.session_state.lang == "FR" else "Work at height", value=p_hauteur_val)
+                p_toiture = st.checkbox("Accès toiture" if st.session_state.lang == "FR" else "Roof access", value=p_toiture_val)
+                
+                if meteo_interdiction and (p_hauteur or p_toiture):
+                    st.error("🛑 **Alerte Météo :** Le travail en hauteur extérieur / accès toiture est interdit par rafales > 36 km/h !" if st.session_state.lang == "FR" else "🛑 **Weather Alert:** Outdoor height / roof work is forbidden for wind gusts > 36 km/h!")
+
                 p_points_chauds_val = get_val("p_points_chauds")
                 p_excavation = st.checkbox("Excavation, tranchée, génie civil" if st.session_state.lang == "FR" else "Trench, excavation, civil works", value=get_val("p_excavation"))
-                p_grutage = st.checkbox("Grutage, levage" if st.session_state.lang == "FR" else "Lifting, crane", value=get_val("p_grutage"))
+                
+                p_grutage = st.checkbox("Grutage, levage" if st.session_state.lang == "FR" else "Lifting, crane", value=p_grutage_val)
+                if meteo_interdiction and p_grutage:
+                    st.error("🛑 **Alerte Météo :** Les opérations de levage/grutage sont interdites !" if st.session_state.lang == "FR" else "🛑 **Weather Alert:** Crane and lifting operations are forbidden!")
+
                 p_confine = st.checkbox("Espace confiné" if st.session_state.lang == "FR" else "Confined space", value=get_val("p_confine"))
 
             with cr2:
@@ -839,13 +852,21 @@ if "Kiosk" in role:
             with c_back:
                 if st.button(L["previous"]): st.session_state.step = 4; st.rerun()
             with c_next:
-                if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
+                if meteo_interdiction and (p_hauteur or p_toiture or p_grutage):
+                    st.error("🛑 Impossible de continuer : Conditions météo incompatibles avec les permis sélectionnés." if st.session_state.lang == "FR" else "🛑 Cannot proceed: Weather conditions prohibit the selected permits.")
+                else:
+                    if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
 
         # ==============================================================================
-        # ÉTAPE 6 : PERMIS SPÉCIFIQUES (DYNAMIQUES FR / EN)
+        # ÉTAPE 6 : PERMIS SPÉCIFIQUES (DYNAMIQUES ET SÉCURISÉS MÉTÉO)
         # ==============================================================================
         elif current_step == 6:
             st.subheader(f"6. {L['steps'][5]}")
+
+            meteo_live = obtenir_meteo_amiens_live()
+            vent = meteo_live['vent_j0']
+            temp_max = meteo_live['temp_max_j0']
+            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
 
             # MEULEUSE
             if get_val("p_meuleuse"):
@@ -883,6 +904,10 @@ if "Kiosk" in role:
                 with st.container(border=True):
                     titre_hauteur = "🧗 TRAVAIL EN HAUTEUR" if st.session_state.lang == "FR" else "🧗 WORKING AT HEIGHT"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_hauteur}</h3></div>", unsafe_allow_html=True)
+                    
+                    if meteo_interdiction:
+                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les travaux en hauteur extérieurs sont strictement interdits !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor height work is strictly prohibited!")
+                    
                     st.info("🥽 Casque avec jugulaire obligatoire" if st.session_state.lang == "FR" else "🥽 Helmet with chinstrap required")
 
                     st.session_state.form_data["h_pirl"] = st.checkbox("Plateforme PIRL" if st.session_state.lang == "FR" else "PIRL Platform", value=get_val("h_pirl"))
@@ -918,6 +943,10 @@ if "Kiosk" in role:
                 with st.container(border=True):
                     titre_toiture = "🏢 ACCÈS TOITURE" if st.session_state.lang == "FR" else "🏢 ROOF ACCESS"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_toiture}</h3></div>", unsafe_allow_html=True)
+                    
+                    if meteo_interdiction:
+                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictement interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
+
                     opts_protect = ["Garde-corps", "Ligne de vie", "Pas de protection"] if st.session_state.lang == "FR" else ["Guardrail", "Lifeline", "None"]
                     st.session_state.form_data["toiture_protection"] = st.selectbox("Protection :", opts_protect)
                     st.session_state.form_data["toiture_valideur"] = st.text_input("Valideur accès toiture :" if st.session_state.lang == "FR" else "Roof Access Approver:", value=get_val("toiture_valideur"))
@@ -971,6 +1000,10 @@ if "Kiosk" in role:
                 with st.container(border=True):
                     titre_grut = "🏗️ GRUTAGE & LEVAGE" if st.session_state.lang == "FR" else "🏗️ CRANE & LIFTING"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_grut}</h3></div>", unsafe_allow_html=True)
+                    
+                    if meteo_interdiction:
+                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les opérations de levage/grutage sont strictement interdites !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Crane lifting is strictly prohibited!")
+
                     st.session_state.form_data["grut_desc_mop"] = st.text_area("Description de la charge :" if st.session_state.lang == "FR" else "Load Description:", value=get_val("grut_desc_mop"))
                     
                     cg1, cg2 = st.columns(2)
@@ -1057,15 +1090,27 @@ if "Kiosk" in role:
             with c_back:
                 if st.button(L["previous"]): st.session_state.step = 5; st.rerun()
             with c_next:
-                if st.button(L["next"], type="primary"): st.session_state.step = 7; st.rerun()
+                if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
+                    st.error("🛑 Impossible de valider : Vents trop fort (> 36km/h) pour Hauteur/Toiture/Grutage !" if st.session_state.lang == "FR" else "🛑 Validation blocked: High wind (> 36km/h) for Height/Roof/Crane!")
+                else:
+                    if st.button(L["next"], type="primary"): st.session_state.step = 7; st.rerun()
+
         # ==============================================================================
         # ÉTAPE 7 : RÉCAPITULATIF DÉTAILLÉ
         # ==============================================================================
         elif current_step == 7:
             st.subheader(f"7. {L['steps'][6]}")
 
+            meteo_live = obtenir_meteo_amiens_live()
+            vent = meteo_live['vent_j0']
+            temp_max = meteo_live['temp_max_j0']
+            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
+
             msg_pending = "⚠️ PERMIS EN ATTENTE DE VALIDATION BATCH (07h30)" if st.session_state.lang == "FR" else "⚠️ PERMIT PENDING BATCH VALIDATION (07:30 AM)"
             st.markdown(f"<div class='status-pending'>{msg_pending}</div>", unsafe_allow_html=True)
+
+            if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
+                st.error("🛑 **ALERTE MÉTÉO CRITIQUE SUR CE PERMIS :** Les travaux en hauteur, toiture ou grutage sélectionnés ne pourront pas démarrer sans une baisse de vent sous 36 km/h !" if st.session_state.lang == "FR" else "🛑 **CRITICAL WEATHER ALERT:** Selected height, roof, or crane works cannot start until wind drops below 36 km/h!")
 
             if get_val("is_subcontractor"):
                 st.warning(f"🤝 **{L['subcontract_alert']}**")
@@ -1206,9 +1251,12 @@ if "Kiosk" in role:
                 st.download_button(L["download_pdf"], data=pdf_bytes, file_name=f"Permis_{permis_final['id']}.pdf", mime="application/pdf", use_container_width=True)
 
             with c_sub:
-                if st.button(L["submit_batch"], type="primary", use_container_width=True):
-                    st.session_state.permis_db.append(permis_final)
-                    st.balloons(); st.success(f"Permis {permis_final['id']} soumis au batch !"); st.session_state.kiosk_mode = "HOME"
+                if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
+                    st.error("🛑 Soumission bloquée : Rafales > 36km/h incompatibles avec les permis retenus." if st.session_state.lang == "FR" else "🛑 Submission blocked: Wind gusts > 36km/h incompatible with selected permits.")
+                else:
+                    if st.button(L["submit_batch"], type="primary", use_container_width=True):
+                        st.session_state.permis_db.append(permis_final)
+                        st.balloons(); st.success(f"Permis {permis_final['id']} soumis au batch !"); st.session_state.kiosk_mode = "HOME"
 
 # ==============================================================================
 # INTERFACE 2 : DDS BOARD
