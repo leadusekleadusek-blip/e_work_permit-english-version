@@ -272,8 +272,8 @@ VALEURS_PAR_DEFAUT = {
     "intervenants": ["Léa DUSEK", "Matthieu MARTIN"],
     
     # RISQUES PRINCIPAUX
-    "p_hauteur": False, "p_toiture": False, "p_points_chauds": False, "p_excavation": False,
-    "p_grutage": False, "p_confine": False, "p_electrique": False, "p_ouverture_circuit": False,
+    "p_hauteur": False, "h_exterieur": False, "p_toiture": False, "p_points_chauds": False, "p_excavation": False,
+    "p_grutage": False, "grut_exterieur": True, "p_confine": False, "p_electrique": False, "p_ouverture_circuit": False,
     "p_machines_mouvement": False, "p_equipement_pression": False, "p_laser_classe_iv": False,
     "p_demolition": False, "p_meuleuse": False, "dta_consultation": False, "p_consignation": False,
     "p_systeme_risque": False,
@@ -330,6 +330,14 @@ def sanitize_text(text):
     normalized = unicodedata.normalize('NFKD', text)
     cleaned = ''.join(c for c in normalized if not unicodedata.combining(c))
     return cleaned.encode('latin-1', 'ignore').decode('latin-1')
+
+# Helper pour détecter les blocages météo stricts (seulement sur extérieur)
+def is_meteo_blocked(vent, temp_max):
+    critique = (vent > 36 or temp_max < 3 or temp_max > 30)
+    hauteur_ext = get_val("p_hauteur") and get_val("h_exterieur")
+    grutage_ext = get_val("p_grutage") and get_val("grut_exterieur")
+    toiture = get_val("p_toiture")
+    return critique and (hauteur_ext or grutage_ext or toiture)
 
 # ---------------------------------------------------------
 # GÉNÉRATION DU PDF EXACTEMENT IDENTIQUE À L'ÉTAPE 7
@@ -441,7 +449,9 @@ def generer_pdf_bytes(permis):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Travail en Hauteur :" if is_fr else "• Work at Height:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
-        pdf.multi_cell(190, 4, sanitize_text(f"  PIRL: {fd.get('h_pirl')} | Nacelle: {fd.get('h_nacelle')} | Échafaudage: {fd.get('h_echaf')}"))
+        env_str = "Extérieur" if fd.get("h_exterieur") else "Intérieur (Sous bâtiment)"
+        if not is_fr: env_str = "Outdoor" if fd.get("h_exterieur") else "Indoor (Inside building)"
+        pdf.multi_cell(190, 4, sanitize_text(f"  Lieu: {env_str} | PIRL: {fd.get('h_pirl')} | Nacelle: {fd.get('h_nacelle')} | Échafaudage: {fd.get('h_echaf')}"))
 
     if fd.get("p_toiture"):
         pdf.set_font("Helvetica", "B", 8)
@@ -463,10 +473,12 @@ def generer_pdf_bytes(permis):
 
     if fd.get("p_grutage"):
         pdf.set_font("Helvetica", "B", 8)
-        pdf.cell(190, 4, sanitize_text("• Grutage & Levage :" if is_fr else "• Crane Lifting:"), 0, 1)
+        pdf.cell(190, 4, sanitize_text("• Grutage & Levage :" if is_fr else "• Crane & Lifting:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
+        env_g_str = "Extérieur (Grue/Bras)" if fd.get("grut_exterieur") else "Intérieur (Palan/Pont roulant)"
+        if not is_fr: env_g_str = "Outdoor (Crane)" if fd.get("grut_exterieur") else "Indoor (Hoist/Crane)"
         poids_t = float(fd.get('grut_poids_charge', 0)) + float(fd.get('grut_poids_acc', 0))
-        pdf.multi_cell(190, 4, sanitize_text(f"  Poids Total: {poids_t} {fd.get('grut_unite')} | Immatriculation: {fd.get('grut_immat')} | Vent Mesuré: {fd.get('grut_vent_val')} {fd.get('grut_vent_unite')} | Anémomètre OK"))
+        pdf.multi_cell(190, 4, sanitize_text(f"  Zone: {env_g_str} | Poids Total: {poids_t} {fd.get('grut_unite')} | Immatriculation: {fd.get('grut_immat')} | Vent Mesuré: {fd.get('grut_vent_val')} {fd.get('grut_vent_unite')} | Anémomètre OK"))
 
     if fd.get("p_confine"):
         pdf.set_font("Helvetica", "B", 8)
@@ -687,11 +699,11 @@ if "Kiosk" in role:
             temp_max = meteo_live['temp_max_j0']
             vent = meteo_live['vent_j0']
             
-            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
+            meteo_critique = (vent > 36 or temp_max < 3 or temp_max > 30)
 
-            if meteo_interdiction:
+            if meteo_critique:
                 weather_class = "weather-alert"
-                status_msg = f"❌ <b>ALERTE MÉTÉO : INTERDICTION DE TRAVAIL EN EXTÉRIEUR ET EN HAUTEUR</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil d'arrêt : 36 km/h)<br>• Les permis Hauteur (extérieur), Toiture et Grutage / Levage sont <b>strictement bloqués</b>." if st.session_state.lang == "FR" else f"❌ <b>WEATHER ALERT: OUTDOOR & HEIGHT WORK PROHIBITED</b><br>• Measured wind: <b>{vent} km/h</b> (Stop limit: 36 km/h)<br>• Height (outdoor), Roof Access, and Crane Lifting permits are <b>strictly blocked</b>."
+                status_msg = f"❌ <b>ALERTE MÉTÉO : CONDITIONS DÉFAVORABLES EN EXTÉRIEUR</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil d'arrêt : 36 km/h)<br>• Les travaux en Hauteur <u>en extérieur</u>, l'Accès Toiture et le Grutage/Levage <u>en extérieur</u> sont <b>strictement bloqués</b>.<br>• <i>Les travaux en hauteur et levages réalisés en intérieur (dans un bâtiment) restent autorisés.</i>" if st.session_state.lang == "FR" else f"❌ <b>WEATHER ALERT: UNFAVORABLE OUTDOOR CONDITIONS</b><br>• Measured wind: <b>{vent} km/h</b> (Stop limit: 36 km/h)<br>• <u>Outdoor</u> Height work, Roof Access, and <u>Outdoor</u> Crane Lifting are <b>strictly blocked</b>.<br>• <i>Indoor height works and indoor lifting inside buildings remain allowed.</i>"
             elif 30 <= vent <= 36:
                 weather_class = "weather-warning"
                 status_msg = f"⚠️ <b>VIGILANCE MÉTÉO RENFORCÉE</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil de pré-alerte)<br>• Anémomètre obligatoire pour le grutage et vigilance accrue sur nacelle." if st.session_state.lang == "FR" else f"⚠️ <b>ENHANCED WEATHER VIGILANCE</b><br>• Measured wind: <b>{vent} km/h</b> (Warning limit)<br>• Anemometer required for crane lifting and high vigilance on MEWP."
@@ -724,19 +736,12 @@ if "Kiosk" in role:
                 p_toiture_val = get_val("p_toiture")
                 p_grutage_val = get_val("p_grutage")
 
-                # Désactivation si alerte météo critique
                 p_hauteur = st.checkbox("Travail en hauteur" if st.session_state.lang == "FR" else "Work at height", value=p_hauteur_val)
                 p_toiture = st.checkbox("Accès toiture" if st.session_state.lang == "FR" else "Roof access", value=p_toiture_val)
-                
-                if meteo_interdiction and (p_hauteur or p_toiture):
-                    st.error("🛑 **Alerte Météo :** Le travail en hauteur extérieur / accès toiture est interdit par rafales > 36 km/h !" if st.session_state.lang == "FR" else "🛑 **Weather Alert:** Outdoor height / roof work is forbidden for wind gusts > 36 km/h!")
-
                 p_points_chauds_val = get_val("p_points_chauds")
                 p_excavation = st.checkbox("Excavation, tranchée, génie civil" if st.session_state.lang == "FR" else "Trench, excavation, civil works", value=get_val("p_excavation"))
                 
                 p_grutage = st.checkbox("Grutage, levage" if st.session_state.lang == "FR" else "Lifting, crane", value=p_grutage_val)
-                if meteo_interdiction and p_grutage:
-                    st.error("🛑 **Alerte Météo :** Les opérations de levage/grutage sont interdites !" if st.session_state.lang == "FR" else "🛑 **Weather Alert:** Crane and lifting operations are forbidden!")
 
                 p_confine = st.checkbox("Espace confiné" if st.session_state.lang == "FR" else "Confined space", value=get_val("p_confine"))
 
@@ -852,8 +857,8 @@ if "Kiosk" in role:
             with c_back:
                 if st.button(L["previous"]): st.session_state.step = 4; st.rerun()
             with c_next:
-                if meteo_interdiction and (p_hauteur or p_toiture or p_grutage):
-                    st.error("🛑 Impossible de continuer : Conditions météo incompatibles avec les permis sélectionnés." if st.session_state.lang == "FR" else "🛑 Cannot proceed: Weather conditions prohibit the selected permits.")
+                if is_meteo_blocked(vent, temp_max):
+                    st.error("🛑 Impossible de continuer : Conditions météo incompatibles avec les permis sélectionnés en extérieur." if st.session_state.lang == "FR" else "🛑 Cannot proceed: Weather conditions prohibit the selected outdoor permits.")
                 else:
                     if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
 
@@ -866,7 +871,7 @@ if "Kiosk" in role:
             meteo_live = obtenir_meteo_amiens_live()
             vent = meteo_live['vent_j0']
             temp_max = meteo_live['temp_max_j0']
-            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
+            meteo_critique = (vent > 36 or temp_max < 3 or temp_max > 30)
 
             # MEULEUSE
             if get_val("p_meuleuse"):
@@ -905,9 +910,17 @@ if "Kiosk" in role:
                     titre_hauteur = "🧗 TRAVAIL EN HAUTEUR" if st.session_state.lang == "FR" else "🧗 WORKING AT HEIGHT"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_hauteur}</h3></div>", unsafe_allow_html=True)
                     
-                    if meteo_interdiction:
-                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les travaux en hauteur extérieurs sont strictement interdits !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor height work is strictly prohibited!")
-                    
+                    lbl_env_h = "Zone de travail en hauteur :" if st.session_state.lang == "FR" else "Height Work Location:"
+                    opts_env = ["🏢 En intérieur (Sous bâtiment)", "🌧️ En extérieur"] if st.session_state.lang == "FR" else ["🏢 Indoor (Inside building)", "🌧️ Outdoor"]
+                    choice_env = st.radio(lbl_env_h, opts_env, index=1 if get_val("h_exterieur") else 0)
+                    st.session_state.form_data["h_exterieur"] = ("extérieur" in choice_env or "Outdoor" in choice_env)
+
+                    if meteo_critique:
+                        if get_val("h_exterieur"):
+                            st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les travaux en hauteur extérieurs sont strictement interdits !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor height work is strictly prohibited!")
+                        else:
+                            st.warning(f"ℹ️ **ALERTE MÉTÉO EXTÉRIEURE ({vent} km/h) :** Travaux autorisés car réalisés en intérieur." if st.session_state.lang == "FR" else f"ℹ️ **OUTDOOR WEATHER ALERT ({vent} km/h):** Works allowed because executed indoors.")
+
                     st.info("🥽 Casque avec jugulaire obligatoire" if st.session_state.lang == "FR" else "🥽 Helmet with chinstrap required")
 
                     st.session_state.form_data["h_pirl"] = st.checkbox("Plateforme PIRL" if st.session_state.lang == "FR" else "PIRL Platform", value=get_val("h_pirl"))
@@ -944,7 +957,7 @@ if "Kiosk" in role:
                     titre_toiture = "🏢 ACCÈS TOITURE" if st.session_state.lang == "FR" else "🏢 ROOF ACCESS"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_toiture}</h3></div>", unsafe_allow_html=True)
                     
-                    if meteo_interdiction:
+                    if meteo_critique:
                         st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictement interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
 
                     opts_protect = ["Garde-corps", "Ligne de vie", "Pas de protection"] if st.session_state.lang == "FR" else ["Guardrail", "Lifeline", "None"]
@@ -995,14 +1008,22 @@ if "Kiosk" in role:
                     st.session_state.form_data["excav_do"] = st.text_input("Donneur d'Ordre :" if st.session_state.lang == "FR" else "Project Owner:", value=get_val("excav_do"))
                     st.session_state.form_data["excav_casque_rouge"] = st.text_input("Casque Rouge P&G :" if st.session_state.lang == "FR" else "P&G Red Helmet:", value=get_val("excav_casque_rouge"))
 
-            # 5. GRUTAGE
+            # 5. GRUTAGE / LEVAGE
             if get_val("p_grutage"):
                 with st.container(border=True):
                     titre_grut = "🏗️ GRUTAGE & LEVAGE" if st.session_state.lang == "FR" else "🏗️ CRANE & LIFTING"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_grut}</h3></div>", unsafe_allow_html=True)
                     
-                    if meteo_interdiction:
-                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les opérations de levage/grutage sont strictement interdites !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Crane lifting is strictly prohibited!")
+                    lbl_env_g = "Zone de levage :" if st.session_state.lang == "FR" else "Lifting Location:"
+                    opts_env_g = ["🏢 En intérieur (Palan, Pont roulant, Levage sous bâtiment)", "🌧️ En extérieur (Grue mobile, Bras de grue)"] if st.session_state.lang == "FR" else ["🏢 Indoor (Hoist, Overhead crane, Inside building)", "🌧️ Outdoor (Mobile crane, Crane arm)"]
+                    choice_env_g = st.radio(lbl_env_g, opts_env_g, index=1 if get_val("grut_exterieur") else 0)
+                    st.session_state.form_data["grut_exterieur"] = ("extérieur" in choice_env_g or "Outdoor" in choice_env_g)
+
+                    if meteo_critique:
+                        if get_val("grut_exterieur"):
+                            st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les opérations de levage/grutage en extérieur sont strictement interdites !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor crane/lifting operations are strictly prohibited!")
+                        else:
+                            st.warning(f"ℹ️ **ALERTE MÉTÉO EXTÉRIEURE ({vent} km/h) :** Levage autorisép car réalisé en intérieur (sans exposition au vent)." if st.session_state.lang == "FR" else f"ℹ️ **OUTDOOR WEATHER ALERT ({vent} km/h):** Lifting allowed because executed indoors.")
 
                     st.session_state.form_data["grut_desc_mop"] = st.text_area("Description de la charge :" if st.session_state.lang == "FR" else "Load Description:", value=get_val("grut_desc_mop"))
                     
@@ -1011,7 +1032,7 @@ if "Kiosk" in role:
                     with cg2: st.session_state.form_data["grut_poids_acc"] = st.number_input("Poids Accessoires :" if st.session_state.lang == "FR" else "Rigging Weight:", value=float(get_val("grut_poids_acc")))
                     
                     cmat1, cmat2, cmat3 = st.columns(3)
-                    with cmat1: st.session_state.form_data["grut_immat"] = st.text_input("Immatriculation Grue :" if st.session_state.lang == "FR" else "Crane Tag:", value=get_val("grut_immat"))
+                    with cmat1: st.session_state.form_data["grut_immat"] = st.text_input("Immatriculation Grue / Tag :" if st.session_state.lang == "FR" else "Crane Tag:", value=get_val("grut_immat"))
                     with cmat2: st.session_state.form_data["grut_fleche"] = st.number_input("Longueur Flèche (m) :" if st.session_state.lang == "FR" else "Boom Length (m):", value=float(get_val("grut_fleche")))
                     with cmat3: st.session_state.form_data["grut_portee"] = st.number_input("Portée (m) :" if st.session_state.lang == "FR" else "Working Radius (m):", value=float(get_val("grut_portee")))
 
@@ -1090,8 +1111,8 @@ if "Kiosk" in role:
             with c_back:
                 if st.button(L["previous"]): st.session_state.step = 5; st.rerun()
             with c_next:
-                if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
-                    st.error("🛑 Impossible de valider : Vents trop fort (> 36km/h) pour Hauteur/Toiture/Grutage !" if st.session_state.lang == "FR" else "🛑 Validation blocked: High wind (> 36km/h) for Height/Roof/Crane!")
+                if is_meteo_blocked(vent, temp_max):
+                    st.error("🛑 Impossible de valider : Vents trop fort (> 36km/h) pour les permis extérieurs sélectionnés !" if st.session_state.lang == "FR" else "🛑 Validation blocked: High wind (> 36km/h) for selected outdoor permits!")
                 else:
                     if st.button(L["next"], type="primary"): st.session_state.step = 7; st.rerun()
 
@@ -1104,13 +1125,12 @@ if "Kiosk" in role:
             meteo_live = obtenir_meteo_amiens_live()
             vent = meteo_live['vent_j0']
             temp_max = meteo_live['temp_max_j0']
-            meteo_interdiction = (vent > 36 or temp_max < 3 or temp_max > 30)
 
             msg_pending = "⚠️ PERMIS EN ATTENTE DE VALIDATION BATCH (07h30)" if st.session_state.lang == "FR" else "⚠️ PERMIT PENDING BATCH VALIDATION (07:30 AM)"
             st.markdown(f"<div class='status-pending'>{msg_pending}</div>", unsafe_allow_html=True)
 
-            if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
-                st.error("🛑 **ALERTE MÉTÉO CRITIQUE SUR CE PERMIS :** Les travaux en hauteur, toiture ou grutage sélectionnés ne pourront pas démarrer sans une baisse de vent sous 36 km/h !" if st.session_state.lang == "FR" else "🛑 **CRITICAL WEATHER ALERT:** Selected height, roof, or crane works cannot start until wind drops below 36 km/h!")
+            if is_meteo_blocked(vent, temp_max):
+                st.error("🛑 **ALERTE MÉTÉO CRITIQUE SUR CE PERMIS :** Les travaux en hauteur extérieurs, toiture ou grutage extérieurs sélectionnés ne pourront pas démarrer sans une baisse de vent sous 36 km/h !" if st.session_state.lang == "FR" else "🛑 **CRITICAL WEATHER ALERT:** Selected outdoor height, roof, or outdoor crane works cannot start until wind drops below 36 km/h!")
 
             if get_val("is_subcontractor"):
                 st.warning(f"🤝 **{L['subcontract_alert']}**")
@@ -1145,7 +1165,8 @@ if "Kiosk" in role:
                 is_fr = (st.session_state.lang == "FR")
 
                 if get_val("p_hauteur"):
-                    tableau_data.append({"Activité": "Hauteur" if is_fr else "Height", "Risque": "Chute de hauteur" if is_fr else "Fall", "Prévention": "Casque jugulaire + VGP nacelle/pirl OK"})
+                    env_lbl = " (Extérieur)" if get_val("h_exterieur") else " (Intérieur)"
+                    tableau_data.append({"Activité": ("Hauteur" if is_fr else "Height") + env_lbl, "Risque": "Chute de hauteur" if is_fr else "Fall", "Prévention": "Casque jugulaire + VGP nacelle/pirl OK"})
                 if get_val("p_toiture"):
                     tableau_data.append({"Activité": "Toiture" if is_fr else "Roof", "Risque": "Chute à travers toit" if is_fr else "Fall", "Prévention": f"{get_val('toiture_protection')} + Valideur {get_val('toiture_valideur')}"})
                 if get_val("p_points_chauds"):
@@ -1155,7 +1176,8 @@ if "Kiosk" in role:
                 if get_val("p_excavation"):
                     tableau_data.append({"Activité": "Excavation", "Risque": "Réseaux / Effondrement" if is_fr else "Utilities", "Prévention": "Plans réseaux OK + DICT + 3 Signatures"})
                 if get_val("p_grutage"):
-                    tableau_data.append({"Activité": "Grutage" if is_fr else "Crane Lifting", "Risque": "Chute de charge" if is_fr else "Dropped load", "Prévention": f"Poids total {float(get_val('grut_poids_charge',0))+float(get_val('grut_poids_acc',0))} {get_val('grut_unite')} + Anémomètre OK"})
+                    env_g_lbl = " (Extérieur)" if get_val("grut_exterieur") else " (Intérieur)"
+                    tableau_data.append({"Activité": ("Grutage/Levage" if is_fr else "Lifting") + env_g_lbl, "Risque": "Chute de charge" if is_fr else "Dropped load", "Prévention": f"Poids total {float(get_val('grut_poids_charge',0))+float(get_val('grut_poids_acc',0))} {get_val('grut_unite')} + Anémomètre OK"})
                 if get_val("p_confine"):
                     tableau_data.append({"Activité": "Espace Confiné" if is_fr else "Confined Space", "Risque": "Asphyxie / Gaz" if is_fr else "Gas", "Prévention": f"Masque M20 + O2 ({get_val('conf_o2')}%) + Vigie extérieure"})
                 if get_val("p_electrique"):
@@ -1195,7 +1217,9 @@ if "Kiosk" in role:
                     st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
                 
                 if get_val("p_hauteur"):
-                    st.write(f"• **Hauteur :** PIRL (`{get_val('h_pirl')}`) | Nacelle (`{get_val('h_nacelle')}`) | Échafaudage (`{get_val('h_echaf')}`)")
+                    env_str = "Extérieur" if get_val("h_exterieur") else "Intérieur (Sous bâtiment)"
+                    if not is_fr: env_str = "Outdoor" if get_val("h_exterieur") else "Indoor (Inside building)"
+                    st.write(f"• **Hauteur :** Lieu `{env_str}` | PIRL (`{get_val('h_pirl')}`) | Nacelle (`{get_val('h_nacelle')}`) | Échafaudage (`{get_val('h_echaf')}`)")
                 
                 if get_val("p_toiture"):
                     st.write(f"• **Toiture :** Protection `{get_val('toiture_protection')}` | Valideur `{get_val('toiture_valideur')}`")
@@ -1207,7 +1231,10 @@ if "Kiosk" in role:
                     st.write(f"• **Excavation :** Plans Réseaux Vérifiés | DICT (`{get_val('excav_dict')}`) | Signatures: Chef `{get_val('excav_chef_manoeuvre')}`, DO `{get_val('excav_do')}`, Casque Rouge `{get_val('excav_casque_rouge')}`")
                 
                 if get_val("p_grutage"):
-                    st.write(f"• **Grutage :** Poids Total `{float(get_val('grut_poids_charge',0))+float(get_val('grut_poids_acc',0))} {get_val('grut_unite')}` | Grue `{get_val('grut_immat')}` | Anémomètre (`{get_val('grut_anemometre')}`) | Vent `{get_val('grut_vent_val')} {get_val('grut_vent_unite')}`")
+                    env_g_str = "Extérieur (Grue/Bras)" if get_val("grut_exterieur") else "Intérieur (Palan/Pont roulant)"
+                    if not is_fr: env_g_str = "Outdoor (Crane)" if get_val("grut_exterieur") else "Indoor (Hoist/Crane)"
+                    poids_t = float(get_val('grut_poids_charge', 0)) + float(get_val('grut_poids_acc', 0))
+                    st.write(f"• **Grutage :** Zone `{env_g_str}` | Poids Total `{poids_t} {get_val('grut_unite')}` | Immatriculation/Tag `{get_val('grut_immat')}` | Anémomètre (`{get_val('grut_anemometre')}`) | Vent `{get_val('grut_vent_val')} {get_val('grut_vent_unite')}`")
                 
                 if get_val("p_confine"):
                     st.write(f"• **Espace Confiné :** Équipement `{get_val('conf_lieu')}` | Taux O2 `{get_val('conf_o2')}%` | Vigie `{get_val('conf_standby')}` | Entrant `{get_val('conf_entrant')}`")
@@ -1251,8 +1278,8 @@ if "Kiosk" in role:
                 st.download_button(L["download_pdf"], data=pdf_bytes, file_name=f"Permis_{permis_final['id']}.pdf", mime="application/pdf", use_container_width=True)
 
             with c_sub:
-                if meteo_interdiction and (get_val("p_hauteur") or get_val("p_toiture") or get_val("p_grutage")):
-                    st.error("🛑 Soumission bloquée : Rafales > 36km/h incompatibles avec les permis retenus." if st.session_state.lang == "FR" else "🛑 Submission blocked: Wind gusts > 36km/h incompatible with selected permits.")
+                if is_meteo_blocked(vent, temp_max):
+                    st.error("🛑 Soumission bloquée : Rafales > 36km/h incompatibles avec les permis extérieurs retenus." if st.session_state.lang == "FR" else "🛑 Submission blocked: Wind gusts > 36km/h incompatible with selected outdoor permits.")
                 else:
                     if st.button(L["submit_batch"], type="primary", use_container_width=True):
                         st.session_state.permis_db.append(permis_final)
