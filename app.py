@@ -958,7 +958,7 @@ if "Kiosk" in role:
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_toiture}</h3></div>", unsafe_allow_html=True)
                     
                     if meteo_critique:
-                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictement interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
+                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictly interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
 
                     opts_protect = ["Garde-corps", "Ligne de vie", "Pas de protection"] if st.session_state.lang == "FR" else ["Guardrail", "Lifeline", "None"]
                     st.session_state.form_data["toiture_protection"] = st.selectbox("Protection :", opts_protect)
@@ -1023,7 +1023,7 @@ if "Kiosk" in role:
                         if get_val("grut_exterieur"):
                             st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les opérations de levage/grutage en extérieur sont strictement interdites !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor crane/lifting operations are strictly prohibited!")
                         else:
-                            st.warning(f"ℹ️ **ALERTE MÉTÉO EXTÉRIEURE ({vent} km/h) :** Levage autorisép car réalisé en intérieur (sans exposition au vent)." if st.session_state.lang == "FR" else f"ℹ️ **OUTDOOR WEATHER ALERT ({vent} km/h):** Lifting allowed because executed indoors.")
+                            st.warning(f"ℹ️ **ALERTE MÉTÉO EXTÉRIEURE ({vent} km/h) :** Levage autorisé car réalisé en intérieur (sans exposition au vent)." if st.session_state.lang == "FR" else f"ℹ️ **OUTDOOR WEATHER ALERT ({vent} km/h):** Lifting allowed because executed indoors.")
 
                     st.session_state.form_data["grut_desc_mop"] = st.text_area("Description de la charge :" if st.session_state.lang == "FR" else "Load Description:", value=get_val("grut_desc_mop"))
                     
