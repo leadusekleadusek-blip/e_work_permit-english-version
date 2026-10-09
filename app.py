@@ -842,7 +842,7 @@ if "Kiosk" in role:
                 if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
 
         # ==============================================================================
-        # ÉTAPE 6 : PERMIS SPÉCIFIQUES
+        # ÉTAPE 6 : PERMIS SPÉCIFIQUES (DYNAMIQUES FR / EN)
         # ==============================================================================
         elif current_step == 6:
             st.subheader(f"6. {L['steps'][5]}")
@@ -850,7 +850,8 @@ if "Kiosk" in role:
             # MEULEUSE
             if get_val("p_meuleuse"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>⚙️ MEULEUSE — SPÉCIFICATIONS</h3></div>", unsafe_allow_html=True)
+                    titre_meuleuse = "⚙️ MEULEUSE — SPÉCIFICATIONS" if st.session_state.lang == "FR" else "⚙️ ANGLE GRINDER — SPECIFICATIONS"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_meuleuse}</h3></div>", unsafe_allow_html=True)
                     c_m1, c_m2 = st.columns(2)
                     with c_m1:
                         st.session_state.form_data["meuleuse_diametre"] = st.selectbox("Diamètre du disque :" if st.session_state.lang == "FR" else "Disc Diameter:", ["125 mm", "230 mm"], index=0 if get_val("meuleuse_diametre") == "125 mm" else 1)
@@ -880,7 +881,8 @@ if "Kiosk" in role:
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>🧗 TRAVAIL EN HAUTEUR</h3></div>", unsafe_allow_html=True)
+                    titre_hauteur = "🧗 TRAVAIL EN HAUTEUR" if st.session_state.lang == "FR" else "🧗 WORKING AT HEIGHT"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_hauteur}</h3></div>", unsafe_allow_html=True)
                     st.info("🥽 Casque avec jugulaire obligatoire" if st.session_state.lang == "FR" else "🥽 Helmet with chinstrap required")
 
                     st.session_state.form_data["h_pirl"] = st.checkbox("Plateforme PIRL" if st.session_state.lang == "FR" else "PIRL Platform", value=get_val("h_pirl"))
@@ -914,7 +916,8 @@ if "Kiosk" in role:
             # 2. TOITURE
             if get_val("p_toiture"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>🏢 ACCÈS TOITURE</h3></div>", unsafe_allow_html=True)
+                    titre_toiture = "🏢 ACCÈS TOITURE" if st.session_state.lang == "FR" else "🏢 ROOF ACCESS"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_toiture}</h3></div>", unsafe_allow_html=True)
                     opts_protect = ["Garde-corps", "Ligne de vie", "Pas de protection"] if st.session_state.lang == "FR" else ["Guardrail", "Lifeline", "None"]
                     st.session_state.form_data["toiture_protection"] = st.selectbox("Protection :", opts_protect)
                     st.session_state.form_data["toiture_valideur"] = st.text_input("Valideur accès toiture :" if st.session_state.lang == "FR" else "Roof Access Approver:", value=get_val("toiture_valideur"))
@@ -922,7 +925,8 @@ if "Kiosk" in role:
             # 3. POINT CHAUD
             if get_val("p_points_chauds"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#d97706;'>🔥 PERMIS POINT CHAUD</h3></div>", unsafe_allow_html=True)
+                    titre_chaud = "🔥 PERMIS POINT CHAUD" if st.session_state.lang == "FR" else "🔥 HOT WORK PERMIT"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#d97706;'>{titre_chaud}</h3></div>", unsafe_allow_html=True)
                     st.write("##### Extincteurs :" if st.session_state.lang == "FR" else "##### Extinguishers:")
                     opts_ext = ["Poudre", "Eau + additifs", "CO2"] if st.session_state.lang == "FR" else ["Powder", "Water + additives", "CO2"]
                     cext1, cext2 = st.columns(2)
@@ -944,7 +948,8 @@ if "Kiosk" in role:
             # 4. EXCAVATION
             if get_val("p_excavation"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>🚜 EXCAVATION & TRANCHÉE</h3></div>", unsafe_allow_html=True)
+                    titre_excav = "🚜 EXCAVATION & TRANCHÉE" if st.session_state.lang == "FR" else "🚜 EXCAVATION & TRENCHING"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_excav}</h3></div>", unsafe_allow_html=True)
                     st.write("##### Vérification Réseaux :" if st.session_state.lang == "FR" else "##### Utility Maps Check:")
                     cx1, cx2, cx3, cx4 = st.columns(4)
                     with cx1: st.session_state.form_data["excav_plans_eaux_indus"] = st.checkbox("Eaux" if st.session_state.lang == "FR" else "Water", value=get_val("excav_plans_eaux_indus"))
@@ -956,7 +961,7 @@ if "Kiosk" in role:
                     st.session_state.form_data["excav_balisage"] = st.checkbox("Balisage rigide" if st.session_state.lang == "FR" else "Rigid Barricade", value=get_val("excav_balisage"))
                     st.session_state.form_data["excav_profondeur_130"] = st.checkbox("Profondeur > 1,30m" if st.session_state.lang == "FR" else "Depth > 1.30m", value=get_val("excav_profondeur_130"))
                     
-                    st.write("##### Signatures :")
+                    st.write("##### Signatures :" if st.session_state.lang == "FR" else "##### Signatures:")
                     st.session_state.form_data["excav_chef_manoeuvre"] = st.text_input("Chef de Manœuvre :" if st.session_state.lang == "FR" else "Site Manager:", value=get_val("excav_chef_manoeuvre"))
                     st.session_state.form_data["excav_do"] = st.text_input("Donneur d'Ordre :" if st.session_state.lang == "FR" else "Project Owner:", value=get_val("excav_do"))
                     st.session_state.form_data["excav_casque_rouge"] = st.text_input("Casque Rouge P&G :" if st.session_state.lang == "FR" else "P&G Red Helmet:", value=get_val("excav_casque_rouge"))
@@ -964,7 +969,8 @@ if "Kiosk" in role:
             # 5. GRUTAGE
             if get_val("p_grutage"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>🏗️ GRUTAGE & LEVAGE</h3></div>", unsafe_allow_html=True)
+                    titre_grut = "🏗️ GRUTAGE & LEVAGE" if st.session_state.lang == "FR" else "🏗️ CRANE & LIFTING"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_grut}</h3></div>", unsafe_allow_html=True)
                     st.session_state.form_data["grut_desc_mop"] = st.text_area("Description de la charge :" if st.session_state.lang == "FR" else "Load Description:", value=get_val("grut_desc_mop"))
                     
                     cg1, cg2 = st.columns(2)
@@ -981,7 +987,7 @@ if "Kiosk" in role:
                     with cv1: st.session_state.form_data["grut_vent_val"] = st.number_input("Vent Mesuré :" if st.session_state.lang == "FR" else "Measured Wind:", value=float(get_val("grut_vent_val")))
                     with cv2: st.session_state.form_data["grut_vent_unite"] = st.selectbox("Unité :" if st.session_state.lang == "FR" else "Unit:", ["km/h", "m/S"], index=0)
 
-                    st.write("##### Signatures :")
+                    st.write("##### Signatures :" if st.session_state.lang == "FR" else "##### Signatures:")
                     st.session_state.form_data["grut_chef_m_nom"] = st.text_input("Chef de Manœuvre :" if st.session_state.lang == "FR" else "Lift Director:", value=get_val("grut_chef_m_nom"))
                     st.session_state.form_data["grut_do_sign"] = st.text_input("Donneur d'Ordre :" if st.session_state.lang == "FR" else "Project Owner:", value=get_val("grut_do_sign"))
                     st.session_state.form_data["grut_casque_rouge_sign"] = st.text_input("Casque Rouge :" if st.session_state.lang == "FR" else "Red Helmet:", value=get_val("grut_casque_rouge_sign"))
@@ -989,7 +995,8 @@ if "Kiosk" in role:
             # 6. ESPACE CONFINÉ
             if get_val("p_confine"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>🦺 ESPACE CONFINÉ</h3></div>", unsafe_allow_html=True)
+                    titre_conf = "🦺 ESPACE CONFINÉ" if st.session_state.lang == "FR" else "🦺 CONFINED SPACE"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_conf}</h3></div>", unsafe_allow_html=True)
                     st.session_state.form_data["conf_lieu"] = st.text_input("Nom de la cuve / équipement :" if st.session_state.lang == "FR" else "Vessel, Tank Name:", value=get_val("conf_lieu"))
                     st.session_state.form_data["conf_catec"] = st.checkbox("Certifié CATEC OK", value=get_val("conf_catec"))
                     st.session_state.form_data["conf_m20"] = st.checkbox("Masque d'évacuation M20 OK", value=get_val("conf_m20"))
@@ -1005,7 +1012,8 @@ if "Kiosk" in role:
             # 7. ÉLECTRIQUE
             if get_val("p_electrique"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>⚡ TRAVAUX ÉLECTRIQUES</h3></div>", unsafe_allow_html=True)
+                    titre_elec = "⚡ TRAVAUX ÉLECTRIQUES" if st.session_state.lang == "FR" else "⚡ ELECTRICAL WORKS"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_elec}</h3></div>", unsafe_allow_html=True)
                     st.session_state.form_data["elec_armoire"] = st.checkbox("Intervention intérieur armoire" if st.session_state.lang == "FR" else "Inside Cabinet", value=get_val("elec_armoire"))
                     st.session_state.form_data["elec_voisinage_tension"] = st.checkbox("Voisinage sous tension" if st.session_state.lang == "FR" else "Live Parts Proximity", value=get_val("elec_voisinage_tension"))
                     st.session_state.form_data["elec_voisinage_nues"] = st.checkbox("Pièces nues sous tension" if st.session_state.lang == "FR" else "Bare Exposed Live Parts", value=get_val("elec_voisinage_nues"))
@@ -1014,7 +1022,8 @@ if "Kiosk" in role:
             # 8. CONSIGNATION LOTO
             if get_val("p_consignation"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#15803d;'>⚡ CONSIGNATION LOTO</h3></div>", unsafe_allow_html=True)
+                    titre_loto = "⚡ CONSIGNATION LOTO" if st.session_state.lang == "FR" else "⚡ LOTO ISOLATION"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#15803d;'>{titre_loto}</h3></div>", unsafe_allow_html=True)
                     opts_loto_m = ["2 vannes + drain", "2 vannes", "vanne unique", "platine"] if st.session_state.lang == "FR" else ["2 valves + drain", "2 valves", "single valve", "blind flange"]
                     st.session_state.form_data["loto_ouverture_methode"] = st.selectbox("Méthode de séparation :" if st.session_state.lang == "FR" else "Isolation Method:", opts_loto_m)
                     
@@ -1030,7 +1039,8 @@ if "Kiosk" in role:
             # 9. SYSTÈME À RISQUES / ATEX
             if get_val("p_systeme_risque"):
                 with st.container(border=True):
-                    st.markdown("<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>☣ SYSTÈMES À RISQUES / ATEX</h3></div>", unsafe_allow_html=True)
+                    titre_sr = "☣ SYSTÈMES À RISQUES / ATEX" if st.session_state.lang == "FR" else "☣ HIGH HAZARD SYSTEMS / ATEX"
+                    st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_sr}</h3></div>", unsafe_allow_html=True)
                     st.session_state.form_data["sr_chimique_c1"] = st.checkbox("Produit Chimique Classe 1" if st.session_state.lang == "FR" else "Class 1 Chemical", value=get_val("sr_chimique_c1"))
                     if get_val("sr_chimique_c1"):
                         st.session_state.form_data["sr_chimique_nom"] = st.text_input("Nom Produit :" if st.session_state.lang == "FR" else "Chemical Name:", value=get_val("sr_chimique_nom"))
@@ -1048,7 +1058,6 @@ if "Kiosk" in role:
                 if st.button(L["previous"]): st.session_state.step = 5; st.rerun()
             with c_next:
                 if st.button(L["next"], type="primary"): st.session_state.step = 7; st.rerun()
-
         # ==============================================================================
         # ÉTAPE 7 : RÉCAPITULATIF DÉTAILLÉ
         # ==============================================================================
