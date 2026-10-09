@@ -273,7 +273,7 @@ VALEURS_PAR_DEFAUT = {
     
     # RISQUES PRINCIPAUX
     "p_hauteur": False, "h_exterieur": False, "p_toiture": False, "p_points_chauds": False, "p_excavation": False,
-    "p_grutage": False, "grut_exterieur": True, "p_confine": False, "p_electrique": False, "p_ouverture_circuit": False,
+    "p_grutage": False, "grut_exterieur": False, "p_confine": False, "p_electrique": False, "p_ouverture_circuit": False,
     "p_machines_mouvement": False, "p_equipement_pression": False, "p_laser_classe_iv": False,
     "p_demolition": False, "p_meuleuse": False, "dta_consultation": False, "p_consignation": False,
     "p_systeme_risque": False,
@@ -331,7 +331,7 @@ def sanitize_text(text):
     cleaned = ''.join(c for c in normalized if not unicodedata.combining(c))
     return cleaned.encode('latin-1', 'ignore').decode('latin-1')
 
-# Helper pour détecter les blocages météo stricts (seulement sur extérieur)
+# Helper pour détecter les blocages météo stricts (déclenché à l'Étape 6 et 7 uniquement sur option extérieur)
 def is_meteo_blocked(vent, temp_max):
     critique = (vent > 36 or temp_max < 3 or temp_max > 30)
     hauteur_ext = get_val("p_hauteur") and get_val("h_exterieur")
@@ -703,7 +703,7 @@ if "Kiosk" in role:
 
             if meteo_critique:
                 weather_class = "weather-alert"
-                status_msg = f"❌ <b>ALERTE MÉTÉO : CONDITIONS DÉFAVORABLES EN EXTÉRIEUR</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil d'arrêt : 36 km/h)<br>• Les travaux en Hauteur <u>en extérieur</u>, l'Accès Toiture et le Grutage/Levage <u>en extérieur</u> sont <b>strictement bloqués</b>.<br>• <i>Les travaux en hauteur et levages réalisés en intérieur (dans un bâtiment) restent autorisés.</i>" if st.session_state.lang == "FR" else f"❌ <b>WEATHER ALERT: UNFAVORABLE OUTDOOR CONDITIONS</b><br>• Measured wind: <b>{vent} km/h</b> (Stop limit: 36 km/h)<br>• <u>Outdoor</u> Height work, Roof Access, and <u>Outdoor</u> Crane Lifting are <b>strictly blocked</b>.<br>• <i>Indoor height works and indoor lifting inside buildings remain allowed.</i>"
+                status_msg = f"❌ <b>ALERTE MÉTÉO : CONDITIONS DÉFAVORABLES EN EXTÉRIEUR</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil d'arrêt : 36 km/h)<br>• Les travaux en Hauteur, l'Accès Toiture et le Grutage/Levage <u>réalisés en extérieur</u> seront <b>bloqués à l'étape suivante</b>.<br>• <i>Les travaux en hauteur et levages réalisés en intérieur restent autorisés.</i>" if st.session_state.lang == "FR" else f"❌ <b>WEATHER ALERT: UNFAVORABLE OUTDOOR CONDITIONS</b><br>• Measured wind: <b>{vent} km/h</b> (Stop limit: 36 km/h)<br>• <u>Outdoor</u> Height work, Roof Access, and <u>Outdoor</u> Crane Lifting will be <b>blocked on the next step</b>.<br>• <i>Indoor height works and indoor lifting inside buildings remain allowed.</i>"
             elif 30 <= vent <= 36:
                 weather_class = "weather-warning"
                 status_msg = f"⚠️ <b>VIGILANCE MÉTÉO RENFORCÉE</b><br>• Vent mesuré : <b>{vent} km/h</b> (Seuil de pré-alerte)<br>• Anémomètre obligatoire pour le grutage et vigilance accrue sur nacelle." if st.session_state.lang == "FR" else f"⚠️ <b>ENHANCED WEATHER VIGILANCE</b><br>• Measured wind: <b>{vent} km/h</b> (Warning limit)<br>• Anemometer required for crane lifting and high vigilance on MEWP."
@@ -740,9 +740,7 @@ if "Kiosk" in role:
                 p_toiture = st.checkbox("Accès toiture" if st.session_state.lang == "FR" else "Roof access", value=p_toiture_val)
                 p_points_chauds_val = get_val("p_points_chauds")
                 p_excavation = st.checkbox("Excavation, tranchée, génie civil" if st.session_state.lang == "FR" else "Trench, excavation, civil works", value=get_val("p_excavation"))
-                
                 p_grutage = st.checkbox("Grutage, levage" if st.session_state.lang == "FR" else "Lifting, crane", value=p_grutage_val)
-
                 p_confine = st.checkbox("Espace confiné" if st.session_state.lang == "FR" else "Confined space", value=get_val("p_confine"))
 
             with cr2:
@@ -857,10 +855,8 @@ if "Kiosk" in role:
             with c_back:
                 if st.button(L["previous"]): st.session_state.step = 4; st.rerun()
             with c_next:
-                if is_meteo_blocked(vent, temp_max):
-                    st.error("🛑 Impossible de continuer : Conditions météo incompatibles avec les permis sélectionnés en extérieur." if st.session_state.lang == "FR" else "🛑 Cannot proceed: Weather conditions prohibit the selected outdoor permits.")
-                else:
-                    if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
+                # À l'étape 5, on ne bloque JAMAIS car la localisation (intérieur/extérieur) est choisie à l'Étape 6
+                if st.button(L["next"], type="primary"): st.session_state.step = 6; st.rerun()
 
         # ==============================================================================
         # ÉTAPE 6 : PERMIS SPÉCIFIQUES (DYNAMIQUES ET SÉCURISÉS MÉTÉO)
@@ -917,7 +913,7 @@ if "Kiosk" in role:
 
                     if meteo_critique:
                         if get_val("h_exterieur"):
-                            st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les travaux en hauteur extérieurs sont strictement interdits !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor height work is strictly prohibited!")
+                            st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. Les travaux en hauteur extérieurs sont strictly interdits !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Outdoor height work is strictly prohibited!")
                         else:
                             st.warning(f"ℹ️ **ALERTE MÉTÉO EXTÉRIEURE ({vent} km/h) :** Travaux autorisés car réalisés en intérieur." if st.session_state.lang == "FR" else f"ℹ️ **OUTDOOR WEATHER ALERT ({vent} km/h):** Works allowed because executed indoors.")
 
@@ -958,7 +954,7 @@ if "Kiosk" in role:
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#b91c1c;'>{titre_toiture}</h3></div>", unsafe_allow_html=True)
                     
                     if meteo_critique:
-                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictly interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
+                        st.error(f"🛑 **BLOCAGE MÉTÉO EN DIRECT :** Vent {vent} km/h > 36 km/h. L'accès toiture est strictement interdit !" if st.session_state.lang == "FR" else f"🛑 **LIVE WEATHER BLOCK:** Wind {vent} km/h > 36 km/h. Roof access is strictly prohibited!")
 
                     opts_protect = ["Garde-corps", "Ligne de vie", "Pas de protection"] if st.session_state.lang == "FR" else ["Guardrail", "Lifeline", "None"]
                     st.session_state.form_data["toiture_protection"] = st.selectbox("Protection :", opts_protect)
