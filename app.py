@@ -439,10 +439,13 @@ def generer_pdf_bytes(permis):
 
     fd = st.session_state.form_data
 
-    if fd.get("p_meuleuse"):
+   if fd.get("p_meuleuse"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Meuleuse :" if is_fr else "• Angle Grinder:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
+        pdf.multi_cell(190, 4, sanitize_text(f"  Disque: {fd.get('meuleuse_diametre')} | Marque: {fd.get('meuleuse_marque')} | Alim: {fd.get('meuleuse_alim')} | N° Série: {fd.get('meuleuse_ref')}"))
+        pdf.multi_cell(190, 4, sanitize_text(f"  Carter(s): {fd.get('meuleuse_type_carter')}"))
+        pdf.multi_cell(190, 4, sanitize_text(f"  Angle(s) impose(s): {fd.get('meuleuse_angle_utilisation')}"))
         
         # Carter adapté selon l'activité (Double carter si découpe, sinon Carter simple)
         if fd.get("meuleuse_u_decoupe"):
@@ -910,15 +913,16 @@ if "Kiosk" in role:
                             key="meul_ref_input"
                         )
 
-                    st.write("##### Opérations :" if st.session_state.lang == "FR" else "##### Operations:")
+                    st.write("##### Opérations sélectionnées :" if st.session_state.lang == "FR" else "##### Selected Operations:")
                     cm_op1, cm_op2 = st.columns(2)
                     with cm_op1:
-                        st.session_state.form_data["meuleuse_u_decoupe"] = st.checkbox(
-                            "Découpe" if st.session_state.lang == "FR" else "Cutting", 
+                        u_decoupe = st.checkbox(
+                            "Découpe / Tronçonnage" if st.session_state.lang == "FR" else "Cutting / Off-hand", 
                             value=get_val("meuleuse_u_decoupe"),
                             key="meul_decoupe_chk"
                         )
-                        if get_val("meuleuse_u_decoupe"):
+                        st.session_state.form_data["meuleuse_u_decoupe"] = u_decoupe
+                        if u_decoupe:
                             st.session_state.form_data["meuleuse_mat_decoupe"] = st.selectbox(
                                 "Matériau à découper :" if st.session_state.lang == "FR" else "Cut Material:", 
                                 db_materiaux[st.session_state.lang], 
@@ -926,12 +930,13 @@ if "Kiosk" in role:
                                 key="meul_mat_decoupe_select"
                             )
                         
-                        st.session_state.form_data["meuleuse_u_ebavurage"] = st.checkbox(
-                            "Ébavurage" if st.session_state.lang == "FR" else "Deburring", 
+                        u_ebavurage = st.checkbox(
+                            "Ébavurage / Meulage" if st.session_state.lang == "FR" else "Deburring / Grinding", 
                             value=get_val("meuleuse_u_ebavurage"),
                             key="meul_ebavurage_chk"
                         )
-                        if get_val("meuleuse_u_ebavurage"):
+                        st.session_state.form_data["meuleuse_u_ebavurage"] = u_ebavurage
+                        if u_ebavurage:
                             st.session_state.form_data["meuleuse_mat_ebavurage"] = st.selectbox(
                                 "Matériau ébavuré :" if st.session_state.lang == "FR" else "Deburred Material:", 
                                 db_materiaux[st.session_state.lang], 
@@ -940,17 +945,20 @@ if "Kiosk" in role:
                             )
 
                     with cm_op2:
-                        st.session_state.form_data["meuleuse_u_flap"] = st.checkbox(
+                        u_flap = st.checkbox(
                             "Disque à lamelles" if st.session_state.lang == "FR" else "Flap Disc", 
                             value=get_val("meuleuse_u_flap"),
                             key="meul_flap_chk"
                         )
-                        st.session_state.form_data["meuleuse_u_blanchiment"] = st.checkbox(
-                            "Blanchiment / Décapage" if st.session_state.lang == "FR" else "Stripping", 
+                        st.session_state.form_data["meuleuse_u_flap"] = u_flap
+
+                        u_blanchiment = st.checkbox(
+                            "Blanchiment / Décapage" if st.session_state.lang == "FR" else "Stripping / Cleaning", 
                             value=get_val("meuleuse_u_blanchiment"),
                             key="meul_blanch_chk"
                         )
-                        if get_val("meuleuse_u_blanchiment"):
+                        st.session_state.form_data["meuleuse_u_blanchiment"] = u_blanchiment
+                        if u_blanchiment:
                             st.session_state.form_data["meuleuse_disque_blanchiment"] = st.selectbox(
                                 "Type de disque :" if st.session_state.lang == "FR" else "Disc type:", 
                                 db_disques_blanchiment[st.session_state.lang], 
@@ -958,53 +966,58 @@ if "Kiosk" in role:
                                 key="meul_disque_blanch_select"
                             )
 
+                    # CALCUL AUTOMATIQUE ET DYNAMIQUE DES ANGLES ET CARTERS
+                    angles_list = []
+                    carters_list = []
+
+                    if u_decoupe:
+                        angles_list.append("📐 Tronçonnage / Découpe : 90° (Perpendiculaire)" if st.session_state.lang == "FR" else "📐 Cutting: 90° (Perpendicular)")
+                        carters_list.append("Double carter fermé (180°)" if st.session_state.lang == "FR" else "Double closed guard (180°)")
+                    
+                    if u_ebavurage:
+                        angles_list.append("📐 Ébavurage / Meulage : 15° à 30°" if st.session_state.lang == "FR" else "📐 Deburring / Grinding: 15° to 30°")
+                        if not carters_list:
+                            carters_list.append("Carter simple / standard" if st.session_state.lang == "FR" else "Standard guard")
+
+                    if u_flap or u_blanchiment:
+                        angles_list.append("📐 Finition / Blanchiment / Lamelles : 5° à 15°" if st.session_state.lang == "FR" else "📐 Finishing / Stripping / Flap: 5° to 15°")
+                        if not carters_list:
+                            carters_list.append("Carter simple / standard" if st.session_state.lang == "FR" else "Standard guard")
+
+                    if not angles_list:
+                        angles_list.append("⚠️ Veuillez sélectionner au moins une opération ci-dessus" if st.session_state.lang == "FR" else "⚠️ Please select at least one operation above")
+                        carters_list.append("Carter standard" if st.session_state.lang == "FR" else "Standard guard")
+
+                    # Sauvegarde pour synthèse et PDF
+                    st.session_state.form_data["meuleuse_angle_utilisation"] = " | ".join(angles_list)
+                    st.session_state.form_data["meuleuse_type_carter"] = " / ".join(carters_list)
+
                     st.divider()
 
-                    st.write("##### 🛡️ Dispositifs de Sécurité & Règles d'Inclinométrie :" if st.session_state.lang == "FR" else "##### 🛡️ Safety Devices & Inclinometry Rules:")
+                    st.write("##### 🛡️ Prescriptions de Sécurité & Angles d'Attaque Calculés :" if st.session_state.lang == "FR" else "##### 🛡️ Calculated Safety Rules & Working Angles:")
                     
                     c_sec1, c_sec2 = st.columns(2)
                     with c_sec1:
-                        is_decoupe = get_val("meuleuse_u_decoupe")
-                        lbl_carter = (
-                            "Double carter fermé (Obligatoire pour découpe/tronçonnage)" if is_decoupe 
-                            else "Carter simple / standard installé"
-                        ) if st.session_state.lang == "FR" else (
-                            "Double closed guard (Mandatory for cutting)" if is_decoupe 
-                            else "Standard guard installed"
-                        )
-                        
-                        st.session_state.form_data["meuleuse_carter_conforme"] = st.checkbox(
-                            lbl_carter,
-                            value=True,
-                            key="meul_carter_chk"
-                        )
+                        st.markdown("**1. Protections & Carter appliqués :**" if st.session_state.lang == "FR" else "**1. Applied Guards:**")
+                        for c_item in carters_list:
+                            st.success(f"🔒 {c_item}")
+
                         st.session_state.form_data["meuleuse_poignee_antivib"] = st.checkbox(
                             "Poignée auxiliaire antivibratoire installée" if st.session_state.lang == "FR" else "Anti-vibration side handle installed",
                             value=get_val("meuleuse_poignee_antivib", True),
                             key="meul_poignee_chk"
                         )
                         st.session_state.form_data["meuleuse_homme_mort"] = st.checkbox(
-                            "Interrupteur de sécurité « Homme mort » (Autobloquant)" if st.session_state.lang == "FR" else "Dead-man paddle switch",
+                            "Interrupteur « Homme mort » (Autobloquant)" if st.session_state.lang == "FR" else "Dead-man paddle switch",
                             value=get_val("meuleuse_homme_mort", True),
                             key="meul_homme_mort_chk"
                         )
 
                     with c_sec2:
-                        opts_angles = [
-                            "Tronçonnage / Découpe : 90° (Perpendiculaire)",
-                            "Ébavurage / Meulage : 15° à 30°",
-                            "Finition / Blanchiment : 5° à 15°"
-                        ] if st.session_state.lang == "FR" else [
-                            "Cutting: 90° (Perpendicular)",
-                            "Deburring / Grinding: 15° to 30°",
-                            "Finishing / Stripping: 5° to 15°"
-                        ]
-                        st.session_state.form_data["meuleuse_angle_utilisation"] = st.selectbox(
-                            "Angle d'attaque recommandé selon l'opération :" if st.session_state.lang == "FR" else "Recommended working angle:",
-                            opts_angles,
-                            index=0,
-                            key="meul_angle_select"
-                        )
+                        st.markdown("**2. Angle(s) d'attaque imposé(s) :**" if st.session_state.lang == "FR" else "**2. Mandatory Working Angle(s):**")
+                        for a_item in angles_list:
+                            st.info(a_item)
+
                         st.session_state.form_data["meuleuse_vitesse_check"] = st.checkbox(
                             "Vitesse max disque ≥ Vitesse rotation machine" if st.session_state.lang == "FR" else "Max disc RPM ≥ Machine RPM",
                             value=get_val("meuleuse_vitesse_check", True),
@@ -1012,11 +1025,12 @@ if "Kiosk" in role:
                         )
 
                     msg_info_meuleuse = (
-                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement double carter. Tenue à 2 mains obligatoire pendant toute l'intervention."
+                        "💡 **Rappel sécurité P&G :** Le tronçonnage nécessite impérativement un double carter fermé. Tenue de l'outil à 2 mains obligatoire en permanence."
                         if st.session_state.lang == "FR" 
-                        else "💡 **Safety reminder:** Cutting strictly requires a closed guard (cutting guard). Two-handed hold mandatory at all times."
+                        else "💡 **P&G Safety Reminder:** Cutting strictly requires a double closed guard. Two-handed tool operation mandatory at all times."
                     )
                     st.info(msg_info_meuleuse)
+                    
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
@@ -1285,9 +1299,9 @@ if "Kiosk" in role:
                 if get_val("p_points_chauds"):
                     tableau_data.append({"Activité": "Point Chaud" if is_fr else "Hot Work", "Risque": "Incendie / Brûlure" if is_fr else "Fire", "Prévention": f"Visière EN166B + Extincteurs + Vigie {get_val('chaud_vigie_nom')}"})
                 if get_val("p_meuleuse"):
-                    type_carter_lbl = "Double carter (Découpe)" if get_val("meuleuse_u_decoupe") else "Carter simple"
                     st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
-                    st.write(f"  └ 🛡️ **Sécurité :** {type_carter_lbl} | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
+                    st.write(f"  └ 🛡️ **Carter(s) :** `{get_val('meuleuse_type_carter')}`")
+                    st.write(f"  └ 📐 **Angle(s) d'attaque :** `{get_val('meuleuse_angle_utilisation')}`")
                 if get_val("p_excavation"):
                     tableau_data.append({"Activité": "Excavation", "Risque": "Réseaux / Effondrement" if is_fr else "Utilities", "Prévention": "Plans réseaux OK + DICT + 3 Signatures"})
                 if get_val("p_grutage"):
