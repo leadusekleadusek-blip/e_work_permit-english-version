@@ -439,12 +439,14 @@ def generer_pdf_bytes(permis):
 
     fd = st.session_state.form_data
 
-    if fd.get("p_meuleuse"):
+   if fd.get("p_meuleuse"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Meuleuse :" if is_fr else "• Angle Grinder:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
+        double_carter_txt = "Oui" if fd.get("meuleuse_double_carter") else "Non"
         pdf.multi_cell(190, 4, sanitize_text(f"  Disque: {fd.get('meuleuse_diametre')} | Marque: {fd.get('meuleuse_marque')} | Alim: {fd.get('meuleuse_alim')} | N° Série: {fd.get('meuleuse_ref')}"))
-
+        pdf.multi_cell(190, 4, sanitize_text(f"  Double Carter: {double_carter_txt} | Angle d'utilisation: {fd.get('meuleuse_angle_utilisation')}"))
+       
     if fd.get("p_hauteur"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Travail en Hauteur :" if is_fr else "• Work at Height:"), 0, 1)
@@ -872,8 +874,9 @@ if "Kiosk" in role:
             # MEULEUSE
             if get_val("p_meuleuse"):
                 with st.container(border=True):
-                    titre_meuleuse = "⚙️ MEULEUSE — SPÉCIFICATIONS" if st.session_state.lang == "FR" else "⚙️ ANGLE GRINDER — SPECIFICATIONS"
+                    titre_meuleuse = "⚙️ MEULEUSE — SPÉCIFICATIONS & SÉCURITÉ RENFORCÉE" if st.session_state.lang == "FR" else "⚙️ ANGLE GRINDER — SPECIFICATIONS & ENHANCED SAFETY"
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_meuleuse}</h3></div>", unsafe_allow_html=True)
+                    
                     c_m1, c_m2 = st.columns(2)
                     with c_m1:
                         st.session_state.form_data["meuleuse_diametre"] = st.selectbox(
@@ -948,6 +951,56 @@ if "Kiosk" in role:
                                 index=0,
                                 key="meul_disque_blanch_select"
                             )
+
+                    st.divider()
+
+                    # NOUVELLE SECTION : DISPOSITIFS DE SÉCURITÉ & ANGLES RECOMMANDÉS
+                    st.write("##### 🛡️ Dispositifs de Sécurité & Règles d'Inclinometrie :" if st.session_state.lang == "FR" else "##### 🛡️ Safety Devices & Inclinometry Rules:")
+                    
+                    c_sec1, c_sec2 = st.columns(2)
+                    with c_sec1:
+                        st.session_state.form_data["meuleuse_double_carter"] = st.checkbox(
+                            "Carter fermé / Double carter (spécifique tronçonnage)" if st.session_state.lang == "FR" else "Closed / Double guard (cutting specific)",
+                            value=get_val("meuleuse_double_carter", True),
+                            key="meul_double_carter_chk"
+                        )
+                        st.session_state.form_data["meuleuse_poignee_antivib"] = st.checkbox(
+                            "Poignée auxiliaire antivibratoire installée" if st.session_state.lang == "FR" else "Anti-vibration side handle installed",
+                            value=get_val("meuleuse_poignee_antivib", True),
+                            key="meul_poignee_chk"
+                        )
+                        st.session_state.form_data["meuleuse_homme_mort"] = st.checkbox(
+                            "Interrupteur de sécurité « Homme mort » (Autobloquant)" if st.session_state.lang == "FR" else "Dead-man paddle switch",
+                            value=get_val("meuleuse_homme_mort", True),
+                            key="meul_homme_mort_chk"
+                        )
+
+                    with c_sec2:
+                        opts_angles = [
+                            "Tronçonnage / Découpe : 90° (Perpendiculaire)",
+                            "Ébavurage / Meulage : 15° à 30°",
+                            "Finition / Blanchiment : 5° à 15°"
+                        ] if st.session_state.lang == "FR" else [
+                            "Cutting: 90° (Perpendicular)",
+                            "Deburring / Grinding: 15° to 30°",
+                            "Finishing / Stripping: 5° to 15°"
+                        ]
+                        st.session_state.form_data["meuleuse_angle_utilisation"] = st.selectbox(
+                            "Angle d'attaque recommandé selon l'opération :" if st.session_state.lang == "FR" else "Recommended working angle:",
+                            opts_angles,
+                            index=0,
+                            key="meul_angle_select"
+                        )
+                        st.session_state.form_data["meuleuse_vitesse_check"] = st.checkbox(
+                            "Vitesse max disque ≥ Vitesse rotation machine" if st.session_state.lang == "FR" else "Max disc RPM ≥ Machine RPM",
+                            value=get_val("meuleuse_vitesse_check", True),
+                            key="meul_rpm_chk"
+                        )
+
+                    st.info(
+                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement un carter fermé à 180° (double carter). Tenue à 2 mains obligatoire pendant toute l'intervention." if st.session_state.lang == "FR" 
+                        else "💡 **Safety reminder:** Cutting strictly requires a closed 180° guard. Two-handed hold mandatory at all times."
+                    )
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
@@ -1215,8 +1268,10 @@ if "Kiosk" in role:
                     tableau_data.append({"Activité": "Toiture" if is_fr else "Roof", "Risque": "Chute à travers toit" if is_fr else "Fall", "Prévention": f"{get_val('toiture_protection')} + Valideur {get_val('toiture_valideur')}"})
                 if get_val("p_points_chauds"):
                     tableau_data.append({"Activité": "Point Chaud" if is_fr else "Hot Work", "Risque": "Incendie / Brûlure" if is_fr else "Fire", "Prévention": f"Visière EN166B + Extincteurs + Vigie {get_val('chaud_vigie_nom')}"})
-                if get_val("p_meuleuse"):
-                    tableau_data.append({"Activité": "Meuleuse" if is_fr else "Grinder", "Risque": "Projection / Coupure" if is_fr else "Sparks / Cuts", "Prévention": f"Disque {get_val('meuleuse_diametre')} + Écran facial IDRA"})
+               if get_val("p_meuleuse"):
+                    double_c = "Oui" if get_val("meuleuse_double_carter") else "Non"
+                    st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
+                    st.write(f"  └ 🛡️ **Sécurité :** Double carter (`{double_c}`) | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
                 if get_val("p_excavation"):
                     tableau_data.append({"Activité": "Excavation", "Risque": "Réseaux / Effondrement" if is_fr else "Utilities", "Prévention": "Plans réseaux OK + DICT + 3 Signatures"})
                 if get_val("p_grutage"):
