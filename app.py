@@ -909,7 +909,6 @@ if "Kiosk" in role:
                             value=get_val("meuleuse_ref"),
                             key="meul_ref_input"
                         )
-                        
 
                     st.write("##### Opérations :" if st.session_state.lang == "FR" else "##### Operations:")
                     cm_op1, cm_op2 = st.columns(2)
@@ -926,32 +925,7 @@ if "Kiosk" in role:
                                 index=0,
                                 key="meul_mat_decoupe_select"
                             )
-                        with c_sec1:
-                        # Libellé dynamique : Double carter pour découpe, Simple carter pour les autres
-                        is_decoupe = get_val("meuleuse_u_decoupe")
-                        lbl_carter = (
-                            "Double carter fermé (Obligatoire pour découpe/tronçonnage)" if is_decoupe 
-                            else "Carter simple / standard installé"
-                        ) if st.session_state.lang == "FR" else (
-                            "Double closed guard (Mandatory for cutting)" if is_decoupe 
-                            else "Standard guard installed"
-                        )
                         
-                        st.session_state.form_data["meuleuse_carter_conforme"] = st.checkbox(
-                            lbl_carter,
-                            value=True,
-                            key="meul_carter_chk"
-                        )
-                        st.session_state.form_data["meuleuse_poignee_antivib"] = st.checkbox(
-                            "Poignée auxiliaire antivibratoire installée" if st.session_state.lang == "FR" else "Anti-vibration side handle installed",
-                            value=get_val("meuleuse_poignee_antivib", True),
-                            key="meul_poignee_chk"
-                        )
-                        st.session_state.form_data["meuleuse_homme_mort"] = st.checkbox(
-                            "Interrupteur de sécurité « Homme mort » (Autobloquant)" if st.session_state.lang == "FR" else "Dead-man paddle switch",
-                            value=get_val("meuleuse_homme_mort", True),
-                            key="meul_homme_mort_chk"
-                        )
                         st.session_state.form_data["meuleuse_u_ebavurage"] = st.checkbox(
                             "Ébavurage" if st.session_state.lang == "FR" else "Deburring", 
                             value=get_val("meuleuse_u_ebavurage"),
@@ -986,15 +960,23 @@ if "Kiosk" in role:
 
                     st.divider()
 
-                    # NOUVELLE SECTION : DISPOSITIFS DE SÉCURITÉ & ANGLES RECOMMANDÉS
-                    st.write("##### 🛡️ Dispositifs de Sécurité & Règles d'Inclinometrie :" if st.session_state.lang == "FR" else "##### 🛡️ Safety Devices & Inclinometry Rules:")
+                    st.write("##### 🛡️ Dispositifs de Sécurité & Règles d'Inclinométrie :" if st.session_state.lang == "FR" else "##### 🛡️ Safety Devices & Inclinometry Rules:")
                     
                     c_sec1, c_sec2 = st.columns(2)
                     with c_sec1:
-                        st.session_state.form_data["meuleuse_double_carter"] = st.checkbox(
-                            "Carter fermé / Double carter (spécifique tronçonnage)" if st.session_state.lang == "FR" else "Closed / Double guard (cutting specific)",
-                            value=get_val("meuleuse_double_carter", True),
-                            key="meul_double_carter_chk"
+                        is_decoupe = get_val("meuleuse_u_decoupe")
+                        lbl_carter = (
+                            "Double carter fermé (Obligatoire pour découpe/tronçonnage)" if is_decoupe 
+                            else "Carter simple / standard installé"
+                        ) if st.session_state.lang == "FR" else (
+                            "Double closed guard (Mandatory for cutting)" if is_decoupe 
+                            else "Standard guard installed"
+                        )
+                        
+                        st.session_state.form_data["meuleuse_carter_conforme"] = st.checkbox(
+                            lbl_carter,
+                            value=True,
+                            key="meul_carter_chk"
                         )
                         st.session_state.form_data["meuleuse_poignee_antivib"] = st.checkbox(
                             "Poignée auxiliaire antivibratoire installée" if st.session_state.lang == "FR" else "Anti-vibration side handle installed",
@@ -1030,9 +1012,7 @@ if "Kiosk" in role:
                         )
 
                     st.info(
-                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement un carter fermé à 180° (double carter). Tenue à 2 mains obligatoire pendant toute l'intervention." if st.session_state.lang == "FR" 
-                        else "💡 **Safety reminder:** Cutting strictly requires a closed 180° guard. Two-handed hold mandatory at all times."
-                    )
+                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement un carter fermé à 180° (double carter). Tenue à 2
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
