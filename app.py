@@ -1323,13 +1323,15 @@ if "Kiosk" in role:
                 
                 st.write(", ".join([f"`{e}`" for e in epis_list]))
 
-            # 4. PERMIS SPÉCIFIQUES HRT
+           # 4. PERMIS SPÉCIFIQUES HRT
             with st.container(border=True):
                 tit_s4 = "### ⚙ 4. Détails Techniques des Permis Spécifiques" if st.session_state.lang == "FR" else "### ⚙ 4. Specific Permits Technical Details"
                 st.markdown(tit_s4)
                 
                 if get_val("p_meuleuse"):
+                    type_carter_lbl = "Double carter (Découpe)" if get_val("meuleuse_u_decoupe") else "Carter simple"
                     st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
+                    st.write(f"  └ 🛡️ **Sécurité :** {type_carter_lbl} | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
                 
                 if get_val("p_hauteur"):
                     env_str = "Extérieur" if get_val("h_exterieur") else "Intérieur (Sous bâtiment)"
