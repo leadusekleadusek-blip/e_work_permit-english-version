@@ -439,7 +439,7 @@ def generer_pdf_bytes(permis):
 
     fd = st.session_state.form_data
 
-   if fd.get("p_meuleuse"):
+    if fd.get("p_meuleuse"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Meuleuse :" if is_fr else "• Angle Grinder:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
