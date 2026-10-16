@@ -876,30 +876,78 @@ if "Kiosk" in role:
                     st.markdown(f"<div class='permis-header-card'><h3 style='margin:0; color:#003366;'>{titre_meuleuse}</h3></div>", unsafe_allow_html=True)
                     c_m1, c_m2 = st.columns(2)
                     with c_m1:
-                        st.session_state.form_data["meuleuse_diametre"] = st.selectbox("Diamètre du disque :" if st.session_state.lang == "FR" else "Disc Diameter:", ["125 mm", "230 mm"], index=0 if get_val("meuleuse_diametre") == "125 mm" else 1)
-                        st.session_state.form_data["meuleuse_marque"] = st.text_input("Marque :" if st.session_state.lang == "FR" else "Brand:", value=get_val("meuleuse_marque"))
+                        st.session_state.form_data["meuleuse_diametre"] = st.selectbox(
+                            "Diamètre du disque :" if st.session_state.lang == "FR" else "Disc Diameter:", 
+                            ["125 mm", "230 mm"], 
+                            index=0 if get_val("meuleuse_diametre") == "125 mm" else 1,
+                            key="meul_diam_select"
+                        )
+                        st.session_state.form_data["meuleuse_marque"] = st.text_input(
+                            "Marque :" if st.session_state.lang == "FR" else "Brand:", 
+                            value=get_val("meuleuse_marque"),
+                            key="meul_marque_input"
+                        )
                     with c_m2:
                         opts_alim = ["Batterie 18V", "Filaire 230V", "Pneumatique"] if st.session_state.lang == "FR" else ["18V Battery", "Corded 230V", "Pneumatic"]
-                        st.session_state.form_data["meuleuse_alim"] = st.selectbox("Alimentation :" if st.session_state.lang == "FR" else "Power:", opts_alim, index=0)
-                        st.session_state.form_data["meuleuse_ref"] = st.text_input("N° de Série :" if st.session_state.lang == "FR" else "Serial Tag:", value=get_val("meuleuse_ref"))
+                        st.session_state.form_data["meuleuse_alim"] = st.selectbox(
+                            "Alimentation :" if st.session_state.lang == "FR" else "Power:", 
+                            opts_alim, 
+                            index=0,
+                            key="meul_alim_select"
+                        )
+                        st.session_state.form_data["meuleuse_ref"] = st.text_input(
+                            "N° de Série :" if st.session_state.lang == "FR" else "Serial Tag:", 
+                            value=get_val("meuleuse_ref"),
+                            key="meul_ref_input"
+                        )
 
                     st.write("##### Opérations :" if st.session_state.lang == "FR" else "##### Operations:")
                     cm_op1, cm_op2 = st.columns(2)
                     with cm_op1:
-                        st.session_state.form_data["meuleuse_u_decoupe"] = st.checkbox("Découpe" if st.session_state.lang == "FR" else "Cutting", value=get_val("meuleuse_u_decoupe"))
+                        st.session_state.form_data["meuleuse_u_decoupe"] = st.checkbox(
+                            "Découpe" if st.session_state.lang == "FR" else "Cutting", 
+                            value=get_val("meuleuse_u_decoupe"),
+                            key="meul_decoupe_chk"
+                        )
                         if get_val("meuleuse_u_decoupe"):
-                            st.session_state.form_data["meuleuse_mat_decoupe"] = st.selectbox("Matériau à découper :" if st.session_state.lang == "FR" else "Material:", db_materiaux[st.session_state.lang], index=0)
+                            st.session_state.form_data["meuleuse_mat_decoupe"] = st.selectbox(
+                                "Matériau à découper :" if st.session_state.lang == "FR" else "Cut Material:", 
+                                db_materiaux[st.session_state.lang], 
+                                index=0,
+                                key="meul_mat_decoupe_select"
+                            )
                         
-                        st.session_state.form_data["meuleuse_u_ebavurage"] = st.checkbox("Ébavurage" if st.session_state.lang == "FR" else "Deburring", value=get_val("meuleuse_u_ebavurage"))
+                        st.session_state.form_data["meuleuse_u_ebavurage"] = st.checkbox(
+                            "Ébavurage" if st.session_state.lang == "FR" else "Deburring", 
+                            value=get_val("meuleuse_u_ebavurage"),
+                            key="meul_ebavurage_chk"
+                        )
                         if get_val("meuleuse_u_ebavurage"):
-                            st.session_state.form_data["meuleuse_mat_ebavurage"] = st.selectbox("Matériau ébavuré :" if st.session_state.lang == "FR" else "Material:", db_materiaux[st.session_state.lang], index=0)
+                            st.session_state.form_data["meuleuse_mat_ebavurage"] = st.selectbox(
+                                "Matériau ébavuré :" if st.session_state.lang == "FR" else "Deburred Material:", 
+                                db_materiaux[st.session_state.lang], 
+                                index=0,
+                                key="meul_mat_ebavurage_select"
+                            )
 
                     with cm_op2:
-                        st.session_state.form_data["meuleuse_u_flap"] = st.checkbox("Disque à lamelles" if st.session_state.lang == "FR" else "Flap Disc", value=get_val("meuleuse_u_flap"))
-                        st.session_state.form_data["meuleuse_u_blanchiment"] = st.checkbox("Blanchiment / Décapage" if st.session_state.lang == "FR" else "Stripping", value=get_val("meuleuse_u_blanchiment"))
+                        st.session_state.form_data["meuleuse_u_flap"] = st.checkbox(
+                            "Disque à lamelles" if st.session_state.lang == "FR" else "Flap Disc", 
+                            value=get_val("meuleuse_u_flap"),
+                            key="meul_flap_chk"
+                        )
+                        st.session_state.form_data["meuleuse_u_blanchiment"] = st.checkbox(
+                            "Blanchiment / Décapage" if st.session_state.lang == "FR" else "Stripping", 
+                            value=get_val("meuleuse_u_blanchiment"),
+                            key="meul_blanch_chk"
+                        )
                         if get_val("meuleuse_u_blanchiment"):
-                            st.session_state.form_data["meuleuse_disque_blanchiment"] = st.selectbox("Type de disque :" if st.session_state.lang == "FR" else "Disc type:", db_disques_blanchiment[st.session_state.lang], index=0)
-
+                            st.session_state.form_data["meuleuse_disque_blanchiment"] = st.selectbox(
+                                "Type de disque :" if st.session_state.lang == "FR" else "Disc type:", 
+                                db_disques_blanchiment[st.session_state.lang], 
+                                index=0,
+                                key="meul_disque_blanch_select"
+                            )
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
