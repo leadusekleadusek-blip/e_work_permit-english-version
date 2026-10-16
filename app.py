@@ -439,12 +439,12 @@ def generer_pdf_bytes(permis):
 
     fd = st.session_state.form_data
 
-   if fd.get("p_meuleuse"):
+    if fd.get("p_meuleuse"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Meuleuse :" if is_fr else "• Angle Grinder:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
         
-        # Carter adapté selon l'activité
+        # Carter adapté selon l'activité (Double carter si découpe, sinon Carter simple)
         if fd.get("meuleuse_u_decoupe"):
             type_carter_txt = "Double Carter (Tronçonnage)" if is_fr else "Double Guard (Cutting)"
         else:
@@ -452,7 +452,7 @@ def generer_pdf_bytes(permis):
             
         pdf.multi_cell(190, 4, sanitize_text(f"  Disque: {fd.get('meuleuse_diametre')} | Marque: {fd.get('meuleuse_marque')} | Alim: {fd.get('meuleuse_alim')} | N° Série: {fd.get('meuleuse_ref')}"))
         pdf.multi_cell(190, 4, sanitize_text(f"  Protection: {type_carter_txt} | Angle d'utilisation: {fd.get('meuleuse_angle_utilisation')}"))
-       
+
     if fd.get("p_hauteur"):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Travail en Hauteur :" if is_fr else "• Work at Height:"), 0, 1)
