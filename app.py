@@ -443,9 +443,15 @@ def generer_pdf_bytes(permis):
         pdf.set_font("Helvetica", "B", 8)
         pdf.cell(190, 4, sanitize_text("• Meuleuse :" if is_fr else "• Angle Grinder:"), 0, 1)
         pdf.set_font("Helvetica", "", 8)
-        double_carter_txt = "Oui" if fd.get("meuleuse_double_carter") else "Non"
+        
+        # Carter adapté selon l'activité
+        if fd.get("meuleuse_u_decoupe"):
+            type_carter_txt = "Double Carter (Tronçonnage)" if is_fr else "Double Guard (Cutting)"
+        else:
+            type_carter_txt = "Carter Simple / Standard" if is_fr else "Standard Guard"
+            
         pdf.multi_cell(190, 4, sanitize_text(f"  Disque: {fd.get('meuleuse_diametre')} | Marque: {fd.get('meuleuse_marque')} | Alim: {fd.get('meuleuse_alim')} | N° Série: {fd.get('meuleuse_ref')}"))
-        pdf.multi_cell(190, 4, sanitize_text(f"  Double Carter: {double_carter_txt} | Angle d'utilisation: {fd.get('meuleuse_angle_utilisation')}"))
+        pdf.multi_cell(190, 4, sanitize_text(f"  Protection: {type_carter_txt} | Angle d'utilisation: {fd.get('meuleuse_angle_utilisation')}"))
        
     if fd.get("p_hauteur"):
         pdf.set_font("Helvetica", "B", 8)
@@ -903,6 +909,7 @@ if "Kiosk" in role:
                             value=get_val("meuleuse_ref"),
                             key="meul_ref_input"
                         )
+                        
 
                     st.write("##### Opérations :" if st.session_state.lang == "FR" else "##### Operations:")
                     cm_op1, cm_op2 = st.columns(2)
@@ -919,7 +926,32 @@ if "Kiosk" in role:
                                 index=0,
                                 key="meul_mat_decoupe_select"
                             )
+                        with c_sec1:
+                        # Libellé dynamique : Double carter pour découpe, Simple carter pour les autres
+                        is_decoupe = get_val("meuleuse_u_decoupe")
+                        lbl_carter = (
+                            "Double carter fermé (Obligatoire pour découpe/tronçonnage)" if is_decoupe 
+                            else "Carter simple / standard installé"
+                        ) if st.session_state.lang == "FR" else (
+                            "Double closed guard (Mandatory for cutting)" if is_decoupe 
+                            else "Standard guard installed"
+                        )
                         
+                        st.session_state.form_data["meuleuse_carter_conforme"] = st.checkbox(
+                            lbl_carter,
+                            value=True,
+                            key="meul_carter_chk"
+                        )
+                        st.session_state.form_data["meuleuse_poignee_antivib"] = st.checkbox(
+                            "Poignée auxiliaire antivibratoire installée" if st.session_state.lang == "FR" else "Anti-vibration side handle installed",
+                            value=get_val("meuleuse_poignee_antivib", True),
+                            key="meul_poignee_chk"
+                        )
+                        st.session_state.form_data["meuleuse_homme_mort"] = st.checkbox(
+                            "Interrupteur de sécurité « Homme mort » (Autobloquant)" if st.session_state.lang == "FR" else "Dead-man paddle switch",
+                            value=get_val("meuleuse_homme_mort", True),
+                            key="meul_homme_mort_chk"
+                        )
                         st.session_state.form_data["meuleuse_u_ebavurage"] = st.checkbox(
                             "Ébavurage" if st.session_state.lang == "FR" else "Deburring", 
                             value=get_val("meuleuse_u_ebavurage"),
@@ -1269,9 +1301,9 @@ if "Kiosk" in role:
                 if get_val("p_points_chauds"):
                     tableau_data.append({"Activité": "Point Chaud" if is_fr else "Hot Work", "Risque": "Incendie / Brûlure" if is_fr else "Fire", "Prévention": f"Visière EN166B + Extincteurs + Vigie {get_val('chaud_vigie_nom')}"})
                if get_val("p_meuleuse"):
-                    double_c = "Oui" if get_val("meuleuse_double_carter") else "Non"
+                    type_carter_lbl = "Double carter (Découpe)" if get_val("meuleuse_u_decoupe") else "Carter simple"
                     st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
-                    st.write(f"  └ 🛡️ **Sécurité :** Double carter (`{double_c}`) | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
+                    st.write(f"  └ 🛡️ **Sécurité :** {type_carter_lbl} | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
                 if get_val("p_excavation"):
                     tableau_data.append({"Activité": "Excavation", "Risque": "Réseaux / Effondrement" if is_fr else "Utilities", "Prévention": "Plans réseaux OK + DICT + 3 Signatures"})
                 if get_val("p_grutage"):
