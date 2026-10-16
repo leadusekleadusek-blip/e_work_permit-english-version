@@ -1284,7 +1284,7 @@ if "Kiosk" in role:
                     tableau_data.append({"Activité": "Toiture" if is_fr else "Roof", "Risque": "Chute à travers toit" if is_fr else "Fall", "Prévention": f"{get_val('toiture_protection')} + Valideur {get_val('toiture_valideur')}"})
                 if get_val("p_points_chauds"):
                     tableau_data.append({"Activité": "Point Chaud" if is_fr else "Hot Work", "Risque": "Incendie / Brûlure" if is_fr else "Fire", "Prévention": f"Visière EN166B + Extincteurs + Vigie {get_val('chaud_vigie_nom')}"})
-               if get_val("p_meuleuse"):
+                if get_val("p_meuleuse"):
                     type_carter_lbl = "Double carter (Découpe)" if get_val("meuleuse_u_decoupe") else "Carter simple"
                     st.write(f"• **Meuleuse :** Disque `{get_val('meuleuse_diametre')}` | Modèle `{get_val('meuleuse_marque')}` | Alim `{get_val('meuleuse_alim')}` | Tag `{get_val('meuleuse_ref')}`")
                     st.write(f"  └ 🛡️ **Sécurité :** {type_carter_lbl} | Angle préconisé : `{get_val('meuleuse_angle_utilisation')}`")
