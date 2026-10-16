@@ -1011,8 +1011,12 @@ if "Kiosk" in role:
                             key="meul_rpm_chk"
                         )
 
-                    st.info(
-                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement un carter fermé à 180° (double carter). Tenue à 2
+                    msg_info_meuleuse = (
+                        "💡 **Rappel sécurité :** Le tronçonnage nécessite impérativement double carter. Tenue à 2 mains obligatoire pendant toute l'intervention."
+                        if st.session_state.lang == "FR" 
+                        else "💡 **Safety reminder:** Cutting strictly requires a closed guard (cutting guard). Two-handed hold mandatory at all times."
+                    )
+                    st.info(msg_info_meuleuse)
             # 1. HAUTEUR
             if get_val("p_hauteur"):
                 with st.container(border=True):
